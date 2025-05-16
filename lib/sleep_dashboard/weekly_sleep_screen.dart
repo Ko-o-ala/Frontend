@@ -1,7 +1,21 @@
 import 'package:flutter/material.dart';
 
-class WeeklySleepScreen extends StatelessWidget {
+class WeeklySleepScreen extends StatefulWidget {
   const WeeklySleepScreen({super.key});
+
+  @override
+  State<WeeklySleepScreen> createState() => _WeeklySleepScreenState();
+}
+
+class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
+  final TextEditingController _controller = TextEditingController();
+  bool _isEditing = true; // 입력 가능 상태
+
+  @override
+  void dispose() {
+    _controller.dispose(); // 메모리 누수 방지
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +45,7 @@ class WeeklySleepScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // 그래프 (막대바 대체)
+            // 그래프
             SizedBox(
               height: 150,
               child: Row(
@@ -76,54 +90,65 @@ class WeeklySleepScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 20),
-
-            // 안내 텍스트
             const Text(
               '00님! 더 완벽한 수면 생활을 위해 다음주 계획을 세워봐요!',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
 
-            // 입력창
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(16),
+            // 입력창 or 읽기 전용 텍스트
+            if (_isEditing)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: TextField(
+                  controller: _controller,
+                  maxLines: null,
+                  decoration: const InputDecoration.collapsed(
+                    hintText: '다음 주 수면 계획을 입력하세요',
+                  ),
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.all(16),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  _controller.text.isEmpty ? '내용 없음' : _controller.text,
+                  style: const TextStyle(fontSize: 16, color: Colors.black87),
+                ),
               ),
-              child: const Text(
-                'Your message goes here',
-                style: TextStyle(fontSize: 16),
-              ),
-            ),
 
             const SizedBox(height: 20),
 
-            // 저장 버튼
+            // 저장 or 수정 버튼
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  setState(() {
+                    _isEditing = !_isEditing;
+                  });
+                },
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: Color(0xFF5890FF),
+                  backgroundColor: const Color(0xFF5890FF),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text('저장하기'),
+                child: Text(_isEditing ? '저장하기' : '수정하기'),
               ),
             ),
 
             const SizedBox(height: 8),
-            const Align(
-              alignment: Alignment.center,
-              child: Text(
-                '저장하기 누르면\n수정하기로 바뀜',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12),
-              ),
-            ),
           ],
         ),
       ),
@@ -134,7 +159,7 @@ class WeeklySleepScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: selected ? Color(0xFF5890FF) : Colors.grey[200],
+        color: selected ? const Color(0xFF5890FF) : Colors.grey[200],
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -151,11 +176,7 @@ class WeeklySleepScreen extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Container(
-          width: 16,
-          height: percent, // 임시로 퍼센트값을 높이로 씀
-          color: Color(0xFFF6D35F),
-        ),
+        Container(width: 16, height: percent, color: const Color(0xFFF6D35F)),
         const SizedBox(height: 4),
         Text(day),
       ],
