@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/percent_indicator.dart';
+import 'weekly_sleep_screen.dart';
 
 class SleepDashboard extends StatelessWidget {
   const SleepDashboard({super.key});
@@ -27,9 +28,9 @@ class SleepDashboard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildTab('Days', true),
-                  _buildTab('Weeks', false),
-                  _buildTab('Months', false),
+                  _buildTab(context, 'Days', true),
+                  _buildTab(context, 'Weeks', false),
+                  _buildTab(context, 'Months', false),
                 ],
               ),
               const SizedBox(height: 20),
@@ -150,18 +151,29 @@ class SleepDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildTab(String label, bool selected) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      decoration: BoxDecoration(
-        color: selected ? Color(0xFF5890FF) : Colors.grey[200],
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: selected ? Colors.white : Colors.black,
-          fontWeight: FontWeight.bold,
+  Widget _buildTab(BuildContext context, String label, bool selected) {
+    return GestureDetector(
+      onTap: () {
+        if (label == 'Weeks') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const WeeklySleepScreen()),
+          );
+        }
+        // Days나 Months는 아직 구현 안 했으니 그대로 둡니다.
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? Color(0xFF5890FF) : Colors.grey[200],
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
