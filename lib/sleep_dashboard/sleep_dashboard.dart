@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/sleep_dashboard/monthly_sleep_screen.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'weekly_sleep_screen.dart';
 
@@ -159,13 +160,22 @@ class SleepDashboard extends StatelessWidget {
             context,
             MaterialPageRoute(builder: (context) => const WeeklySleepScreen()),
           );
+        } else if (label == 'Months') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => MonthlySleepScreen()),
+          );
+        } else if (label == "Days") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SleepDashboard()),
+          );
         }
-        // Days나 Months는 아직 구현 안 했으니 그대로 둡니다.
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? Color(0xFF5890FF) : Colors.grey[200],
+          color: selected ? const Color(0xFF5890FF) : Colors.grey[200],
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -176,8 +186,8 @@ class SleepDashboard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ); // ✅ 이 줄이 함수의 return 닫힘!
+  } // ✅ 그리고 이 중괄호는 함수 자체 닫는 거!
 }
 
 class _InfoItem extends StatelessWidget {
