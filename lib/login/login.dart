@@ -107,15 +107,18 @@ class LoginScreen extends StatelessWidget {
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
-                  // 로그인 처리
+                  Navigator.pushReplacementNamed(context, '/');
                 },
-                child: Text('로그인'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFFB0AEF4),
+                  backgroundColor: Color(0xFF8183D9),
                   minimumSize: Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
                   ),
+                ),
+                child: Text(
+                  '로그인',
+                  style: TextStyle(color: Colors.white), // ✅ 글자색 흰색
                 ),
               ),
               SizedBox(height: 10),
@@ -130,7 +133,7 @@ class LoginScreen extends StatelessWidget {
                       TextSpan(
                         text: '회원가입하기',
                         style: TextStyle(
-                          color: Colors.green,
+                          color: Color(0xFF8183D9),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
