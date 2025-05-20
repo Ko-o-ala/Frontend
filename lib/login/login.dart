@@ -49,18 +49,22 @@ class LoginScreen extends StatelessWidget {
               // 구글 버튼
               OutlinedButton.icon(
                 onPressed: () {},
-                icon: Image.asset(
-                  'assets/google_icon.png',
-                  height: 20,
-                ), // 구글 아이콘 필요 시
-                label: Text('GOOGLE로 계속하기'),
+                icon: Image.asset('assets/google_icon.png', height: 20),
+                label: const Expanded(
+                  child: Text(
+                    'GOOGLE로 계속하기',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
                 style: OutlinedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50),
+                  minimumSize: const Size(0, 50), // <- double.infinity ❌
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
                   ),
                 ),
               ),
+
               SizedBox(height: 24),
               Center(
                 child: Text('이메일로 로그인하기', style: TextStyle(color: Colors.grey)),
