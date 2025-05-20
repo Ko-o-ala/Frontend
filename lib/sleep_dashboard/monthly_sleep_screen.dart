@@ -63,22 +63,22 @@ class MonthlySleepScreen extends StatelessWidget {
         currentIndex: 2,
         type: BottomNavigationBarType.fixed,
         onTap: (index) {
-          if (index == 0) Navigator.pushNamed(context, '/');
-          if (index == 1) Navigator.pushNamed(context, '/statics');
+          if (index == 0) Navigator.pushNamed(context, '/home');
+          if (index == 1) Navigator.pushNamed(context, '/sleep');
           if (index == 2) {} // 현재 페이지
-          if (index == 3) Navigator.pushNamed(context, '/profile');
+          if (index == 3) Navigator.pushNamed(context, '/setting');
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart),
-            label: 'Statics',
+            label: 'sleep',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.nights_stay),
             label: 'Discover',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'setting'),
         ],
       ),
     );

@@ -144,8 +144,8 @@ class SleepDashboard extends StatelessWidget {
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: '탐색하기'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: '수면 현황'),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: '수면'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: '사운드'),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: '설정'),
         ],
       ),
