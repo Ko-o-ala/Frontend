@@ -27,16 +27,24 @@ class LoginScreen extends StatelessWidget {
             children: [
               IconButton(icon: Icon(Icons.arrow_back), onPressed: () {}),
               SizedBox(height: 20),
-              Text(
-                '돌아오신 걸 환영합니다!',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+
+              Center(
+                child: Text(
+                  '돌아오신 걸 환영합니다!',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
               ),
+
               SizedBox(height: 40),
               // 카카오 버튼
               ElevatedButton.icon(
                 onPressed: () {},
                 icon: Icon(Icons.facebook, color: Colors.white),
-                label: Text('카카오톡으로 계속하기'),
+                label: Text(
+                  '카카오톡으로 계속하기',
+                  style: TextStyle(color: Colors.white),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF8183D9),
                   minimumSize: Size(double.infinity, 50),
@@ -45,22 +53,22 @@ class LoginScreen extends StatelessWidget {
                   ),
                 ),
               ),
+
               SizedBox(height: 12),
-              // 구글 버튼
-              OutlinedButton.icon(
-                onPressed: () {},
-                icon: Image.asset('assets/google_icon.png', height: 20),
-                label: const Expanded(
-                  child: Text(
-                    'GOOGLE로 계속하기',
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(0, 50), // <- double.infinity ❌
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
+
+              SizedBox(
+                width: 350, // 원하는 고정 가로 길이
+                child: OutlinedButton.icon(
+                  onPressed: () {},
+                  icon: Image.asset('assets/google_icon.png', height: 20),
+                  label: Text('Google로 계속하기'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: Size(0, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    side: BorderSide(color: Colors.grey.shade400),
+                    foregroundColor: Colors.black,
                   ),
                 ),
               ),
