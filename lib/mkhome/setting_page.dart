@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/user_model.dart';
+import 'package:my_app/connect_settings/manage_account.dart';
+import 'package:my_app/connect_settings/notification.dart';
+import 'package:my_app/connect_settings/faq.dart';
+import 'package:my_app/connect_settings/ask_bug.dart';
+import 'package:my_app/device/light_control_page.dart';
+import 'package:my_app/device/alarm/alarm_dashboard_page.dart';
+import 'package:my_app/device/humidifier_control_page.dart';
 
-// 1. 서버 대신 임시 사용자 정보 제공 함수
+
+// 임시 사용자 정보 (나중에 서버 연동 시 수정)
 Future<UserModel> fetchUserInfo() async {
   await Future.delayed(const Duration(seconds: 1));
   return UserModel(
     name: '이유나',
     email: 'yuna@example.com',
-    profileImage: 'lib/assets/profile.jpg', // pubspec.yaml에 등록 필요
+    profileImage: 'lib/assets/profile.jpg', // pubspec.yaml에 등록되어야 함
   );
 }
 
@@ -55,9 +63,60 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 24),
-              _buildSettingsItem(context, '내 계정 정보'),
-              _buildSettingsItem(context, '알림 설정'),
-              _buildSettingsItem(context, '수면 데이터 관리'),
+              _buildSettingsItem(
+                context,
+                '내 계정 정보',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ManageAccountPage()),
+                ),
+              ),
+
+              _buildSettingsItem(
+                context,
+                '수면 데이터 관리',
+                onTap: () {
+                  // 추후 연결
+                },
+              ),
+
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text('기기 제어 설정', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              _buildSettingsItem(
+                context,
+                '조명 설정',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LightControlPage()),
+                  );
+                },
+              ),
+              _buildSettingsItem(
+                context,
+                '타이머 설정',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AlarmDashboardPage()),
+                  );
+                },
+              ),
+              _buildSettingsItem(
+                context,
+                '가습기 조절',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HumidifierControlPage()),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 24),
+              const Divider(),
               const SizedBox(height: 24),
               const Divider(),
               const Padding(
@@ -66,32 +125,77 @@ class SettingsScreen extends StatelessWidget {
                     style: TextStyle(
                         color: Colors.grey, fontWeight: FontWeight.bold)),
               ),
-              _buildSettingsItem(context, '자주 묻는 질문'),
-              _buildSettingsItem(context, '이용 약관/개인정보 처리방침'),
-              _buildSettingsItem(context, '버그 신고/기능 요청'),
+              _buildSettingsItem(
+                context,
+                '자주 묻는 질문',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const FAQPage()),
+                ),
+              ),
+              _buildSettingsItem(
+                context,
+                '이용 약관/개인정보 처리방침',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const Notice()),
+                ),
+              ),
+              _buildSettingsItem(
+                context,
+                '버그 신고/기능 요청',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const BugReportPage()),
+                ),
+              ),
               const SizedBox(height: 16),
               TextButton(
-                  onPressed: () {},
-                  child:
-                  const Text('로그아웃', style: TextStyle(color: Colors.teal))),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text("로그아웃"),
+                      content: const Text("앱에서 로그아웃하시겠어요?\n다시 사용하려면 로그인해야 해요."),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text("취소하기"),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+                          },
+                          child: const Text("로그아웃"),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                child: const Text('로그아웃', style: TextStyle(color: Colors.teal)),
+              ),
               TextButton(
-                  onPressed: () {},
-                  child: const Text('계정 탈퇴하기',
-                      style: TextStyle(color: Colors.black54))),
+                onPressed: () {
+                  // 계정 삭제 기능 연결 예정
+                },
+                child: const Text('계정 탈퇴하기', style: TextStyle(color: Colors.black54)),
+              ),
             ],
           );
         },
       ),
-
-      // 네비게이션 바는 필요 시 아래에 추가 가능
     );
   }
 
-  Widget _buildSettingsItem(BuildContext context, String title) {
+  Widget _buildSettingsItem(BuildContext context, String title, {VoidCallback? onTap}) {
     return ListTile(
       title: Text(title),
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-      onTap: () {},
+      onTap: onTap,
     );
   }
 }
