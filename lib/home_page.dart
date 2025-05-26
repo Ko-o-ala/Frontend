@@ -19,6 +19,13 @@ class HomePage extends StatelessWidget {
               },
               child: const Text('수면 대시보드로 이동'),
             ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/login');
+              },
+              child: const Text('로그인으로 가기'),
+            ),
           ],
         ),
       ),

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart'; // ✅ provider 추가
+
+import 'package:my_app/login/login.dart';
+
 import 'home_page.dart';
 import 'sleep_dashboard/sleep_dashboard.dart';
 import 'package:my_app/sleep_dashboard/weekly_sleep_screen.dart';
@@ -47,9 +51,13 @@ class MyApp extends StatelessWidget {
         '/sleep': (context) => const SleepDashboard(),
         '/weekly': (context) => const WeeklySleepScreen(),
         '/monthly': (context) => MonthlySleepScreen(),
+
         '/setting': (context) => const SettingsScreen(),
         '/notice': (context) => const Notice(),
         '/alarm':(context) => const AlarmDashboardPage(),
+
+        '/login': (context) => LoginScreen(),
+
       },
     );
   }
