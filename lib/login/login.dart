@@ -20,12 +20,65 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  // ✅ REST 방식 Kakao 로그인 함수
+  @override
+  void initState() {
+    super.initState();
+
+    // ✅ 앱으로 돌아올 때 딥링크 감지
+    uriLinkStream.listen((uri) {
+      if (uri != null && uri.scheme == 'myapp' && uri.host == 'oauth') {
+        final code = uri.queryParameters['code'];
+        print('✅ 딥링크로 받은 인가 코드: $code');
+
+        _getAccessToken(code ?? '');
+      }
+    });
+  }
+
+  // ✅ access token 요청 → 사용자 정보 요청
+  void _getAccessToken(String code) async {
+    final tokenRes = await http.post(
+      Uri.parse('https://kauth.kakao.com/oauth/token'),
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: {
+        'grant_type': 'authorization_code',
+        'client_id': '210093e20b9250b8187c91a8863de561', // REST API 키
+        'redirect_uri': 'myapp://oauth',
+        'code': code,
+      },
+    );
+
+    if (tokenRes.statusCode == 200) {
+      final tokenData = json.decode(tokenRes.body);
+      final accessToken = tokenData['access_token'];
+      print('🟢 accessToken: $accessToken');
+
+      final userInfoRes = await http.get(
+        Uri.parse('https://kapi.kakao.com/v2/user/me'),
+        headers: {'Authorization': 'Bearer $accessToken'},
+      );
+
+      if (userInfoRes.statusCode == 200) {
+        final user = json.decode(userInfoRes.body);
+        print('🟢 사용자 정보: $user');
+
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/');
+        }
+      } else {
+        print('🟥 사용자 정보 요청 실패: ${userInfoRes.body}');
+      }
+    } else {
+      print('🟥 토큰 요청 실패: ${tokenRes.body}');
+    }
+  }
+
+  // ✅ 카카오 로그인 요청 → Netlify redirect로 이동
   void _loginWithKakao() async {
     final kakaoAuthUrl = Uri.parse(
       'https://kauth.kakao.com/oauth/authorize'
       '?client_id=210093e20b9250b8187c91a8863de561'
-      '&redirect_uri=myapp://oauth'
+      '&redirect_uri=https://transcendent-biscochitos-b8c877.netlify.app/'
       '&response_type=code',
     );
 
@@ -34,51 +87,6 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       print('카카오 로그인 URL 실행 실패');
     }
-
-    uriLinkStream.listen((uri) async {
-      if (uri != null && uri.scheme == 'myapp' && uri.host == 'oauth') {
-        final code = uri.queryParameters['code'];
-        print('🟡 받은 code: $code');
-
-        // 🔐 access token 요청
-        final tokenRes = await http.post(
-          Uri.parse('https://kauth.kakao.com/oauth/token'),
-          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-          body: {
-            'grant_type': 'authorization_code',
-            'client_id': '210093e20b9250b8187c91a8863de561',
-            'redirect_uri': 'myapp://oauth',
-            'code': code ?? '',
-          },
-        );
-
-        if (tokenRes.statusCode == 200) {
-          final tokenData = json.decode(tokenRes.body);
-          final accessToken = tokenData['access_token'];
-          print('🟢 accessToken: $accessToken');
-
-          // 👤 사용자 정보 요청
-          final userInfoRes = await http.get(
-            Uri.parse('https://kapi.kakao.com/v2/user/me'),
-            headers: {'Authorization': 'Bearer $accessToken'},
-          );
-
-          if (userInfoRes.statusCode == 200) {
-            final user = json.decode(userInfoRes.body);
-            print('🟢 사용자 정보: $user');
-
-            // 로그인 성공 후 이동
-            if (mounted) {
-              Navigator.pushReplacementNamed(context, '/');
-            }
-          } else {
-            print('🟥 사용자 정보 요청 실패: ${userInfoRes.body}');
-          }
-        } else {
-          print('🟥 토큰 요청 실패: ${tokenRes.body}');
-        }
-      }
-    });
   }
 
   @override
