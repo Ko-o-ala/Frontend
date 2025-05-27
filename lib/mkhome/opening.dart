@@ -23,7 +23,30 @@ class opening extends StatelessWidget {
             child: SafeArea(
               child: Column(
                 children: [
-                  SizedBox(height: screenHeight * 0.8), // 🔸 전체 높이의 70%
+                  SizedBox(height: screenHeight * 0.75), // 🔸 버튼 위치 조정
+
+                  // 🔸 홈으로 버튼
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/home');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black87,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        minimumSize: const Size(double.infinity, 50),
+                      ),
+                      child: const Text("홈으로"),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16), // 🔸 버튼 간격
+
+                  // 🔸 시작하기 버튼
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32.0),
                     child: ElevatedButton(
