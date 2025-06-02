@@ -83,7 +83,9 @@ class SleepDashboard extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/time-set'); // 👉 이 안에 있어야 함!
+                  },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     backgroundColor: Color(0xFF5890FF),
@@ -94,6 +96,7 @@ class SleepDashboard extends StatelessWidget {
                   child: const Text('목표 수면시간 수정하기  +'),
                 ),
               ),
+
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
