@@ -221,7 +221,10 @@ class _SleepGoalScreenState extends State<SleepGoalScreen> {
                 ),
                 child: const Text(
                   '저장하기',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black, // ✅ 글자색을 검정으로 설정
+                  ),
                 ),
               ),
             ],
