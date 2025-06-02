@@ -23,13 +23,20 @@ import 'package:my_app/device/alarm/bedtime_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
+
   Hive.registerAdapter(AlarmModelAdapter());
-  await Hive.openBox<AlarmModel>('alarms');
+
+  try {
+    await Hive.openBox<AlarmModel>('alarms');
+    print('✅ Hive box "alarms" opened successfully');
+  } catch (e) {
+    print('❌ Hive box "alarms" open failed: $e');
+  }
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AlarmProvider()), // ✅ 등록
+        ChangeNotifierProvider(create: (_) => AlarmProvider()),
         ChangeNotifierProvider(create: (_) => BedtimeModel()),
       ],
       child: const MyApp(),

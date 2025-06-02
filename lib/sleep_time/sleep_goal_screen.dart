@@ -10,6 +10,23 @@ class _SleepGoalScreenState extends State<SleepGoalScreen> {
   bool isWakeUpMode = false;
   TimeOfDay selectedTime = TimeOfDay(hour: 23, minute: 0);
   Set<int> selectedDays = {};
+  final TextEditingController _timeController = TextEditingController();
+  bool _isInitialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      _timeController.text = selectedTime.format(context);
+      _isInitialized = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    _timeController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,29 +79,48 @@ class _SleepGoalScreenState extends State<SleepGoalScreen> {
                   ),
                 ),
 
-                // 🕰️ 시간 선택 버튼
-                OutlinedButton(
-                  onPressed: () async {
-                    final picked = await showTimePicker(
+                // 🕰️ 시간 선택 필드 (수정됨)
+                GestureDetector(
+                  onTap: () async {
+                    final TimeOfDay? picked = await showTimePicker(
                       context: context,
                       initialTime: selectedTime,
+                      builder: (context, child) {
+                        return Theme(
+                          data: Theme.of(context).copyWith(
+                            timePickerTheme: TimePickerThemeData(
+                              backgroundColor: Colors.white,
+                              hourMinuteTextColor: Colors.black,
+                              dialHandColor: Colors.indigo,
+                              dialBackgroundColor: Colors.indigo.shade50,
+                            ),
+                            textButtonTheme: TextButtonThemeData(
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.indigo,
+                              ),
+                            ),
+                          ),
+                          child: child!,
+                        );
+                      },
                     );
                     if (picked != null) {
                       setState(() {
                         selectedTime = picked;
+                        _timeController.text = picked.format(context);
                       });
                     }
                   },
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                  child: AbsorbPointer(
+                    child: TextField(
+                      controller: _timeController,
+                      readOnly: true,
+                      decoration: InputDecoration(
+                        labelText: '시간 선택',
+                        border: OutlineInputBorder(),
+                        suffixIcon: Icon(Icons.access_time),
+                      ),
                     ),
-                    side: BorderSide(color: Colors.black),
-                  ),
-                  child: Text(
-                    isWakeUpMode ? 'Wake up at...' : 'Go to bed at...',
-                    style: TextStyle(color: Colors.black),
                   ),
                 ),
 
@@ -111,7 +147,7 @@ class _SleepGoalScreenState extends State<SleepGoalScreen> {
                 // 💾 저장 버튼
                 ElevatedButton(
                   onPressed: () {
-                    // TODO: 저장 로직
+                    Navigator.pop(context, selectedTime);
                   },
                   child: Text('저장하기'),
                   style: ElevatedButton.styleFrom(
@@ -126,23 +162,6 @@ class _SleepGoalScreenState extends State<SleepGoalScreen> {
             ),
           ),
         ),
-      ),
-
-      // ⛵ 바텀 네비게이션
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 1,
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
-            label: 'Statics',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.brightness_2),
-            label: 'Discover',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
       ),
     );
   }
