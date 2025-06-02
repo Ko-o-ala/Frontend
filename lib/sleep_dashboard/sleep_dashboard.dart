@@ -4,26 +4,28 @@ import 'package:percent_indicator/percent_indicator.dart';
 import 'weekly_sleep_screen.dart';
 
 class SleepDashboard extends StatefulWidget {
-  final TimeOfDay? goalTime;
+  final Duration? goalSleepDuration;
 
-  const SleepDashboard({Key? key, this.goalTime}) : super(key: key);
+  const SleepDashboard({Key? key, this.goalSleepDuration}) : super(key: key);
 
   @override
   State<SleepDashboard> createState() => _SleepDashboardState();
 }
 
 class _SleepDashboardState extends State<SleepDashboard> {
-  late String formattedTime;
+  late String formattedDuration;
 
   @override
   void initState() {
     super.initState();
-    if (widget.goalTime != null) {
-      formattedTime = '${widget.goalTime!.hour}h ${widget.goalTime!.minute}m';
-      print('✅ 전달받은 시간: $formattedTime');
+    if (widget.goalSleepDuration != null) {
+      final hours = widget.goalSleepDuration!.inHours;
+      final minutes = widget.goalSleepDuration!.inMinutes % 60;
+      formattedDuration = '${hours}시간 ${minutes}분';
+      print('✅ 전달받은 수면 시간: $formattedDuration');
     } else {
-      formattedTime = '0h 0m';
-      print('⚠️ 전달된 시간 없음');
+      formattedDuration = '시간 미정';
+      print('⚠️ 전달된 수면 시간 없음');
     }
   }
 
@@ -57,7 +59,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
               ),
               const SizedBox(height: 20),
               Container(
-                width: double.infinity, // ✅ 오버플로 방지
+                width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
@@ -72,7 +74,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
                     children: [
                       const TextSpan(text: 'You have slept '),
                       TextSpan(
-                        text: formattedTime,
+                        text: formattedDuration,
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const TextSpan(text: ' that is above your '),
@@ -91,10 +93,10 @@ class _SleepDashboardState extends State<SleepDashboard> {
               const SizedBox(height: 20),
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: _InfoItem(
                       icon: Icons.nights_stay,
-                      time: '4시간 30분', // ✅ 나중에 실제 총 수면 시간으로 교체
+                      time: '취침시간',
                       label: '총 수면 시간',
                     ),
                   ),
@@ -102,13 +104,12 @@ class _SleepDashboardState extends State<SleepDashboard> {
                   Expanded(
                     child: _InfoItem(
                       icon: Icons.access_time,
-                      time: formattedTime, // ✅ 전달받은 시간 사용
+                      time: formattedDuration,
                       label: '목표 수면 시간',
                     ),
                   ),
                 ],
               ),
-
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
@@ -118,12 +119,13 @@ class _SleepDashboardState extends State<SleepDashboard> {
                       context,
                       '/time-set',
                     );
-                    if (result is TimeOfDay) {
+                    if (result is Duration) {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder:
-                              (context) => SleepDashboard(goalTime: result),
+                              (context) =>
+                                  SleepDashboard(goalSleepDuration: result),
                         ),
                       );
                     }
@@ -131,6 +133,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     backgroundColor: Color(0xFF5890FF),
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
