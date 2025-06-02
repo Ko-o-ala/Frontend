@@ -86,7 +86,7 @@ class _SleepGoalScreenState extends State<SleepGoalScreen> {
                             color:
                                 isWakeUpMode
                                     ? Colors.grey.shade200
-                                    : const Color(0xFF08063D),
+                                    : const Color(0xFFB0AEF4),
                             borderRadius: const BorderRadius.horizontal(
                               left: Radius.circular(30),
                             ),
@@ -94,7 +94,7 @@ class _SleepGoalScreenState extends State<SleepGoalScreen> {
                           child: Text(
                             'Go to bed at',
                             style: TextStyle(
-                              color: isWakeUpMode ? Colors.black : Colors.white,
+                              color: isWakeUpMode ? Colors.black : Colors.black,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -110,7 +110,7 @@ class _SleepGoalScreenState extends State<SleepGoalScreen> {
                           decoration: BoxDecoration(
                             color:
                                 isWakeUpMode
-                                    ? const Color(0xFF08063D)
+                                    ? const Color(0xFFB0AEF4)
                                     : Colors.grey.shade200,
                             borderRadius: const BorderRadius.horizontal(
                               right: Radius.circular(30),
@@ -119,7 +119,7 @@ class _SleepGoalScreenState extends State<SleepGoalScreen> {
                           child: Text(
                             'Wake up at',
                             style: TextStyle(
-                              color: isWakeUpMode ? Colors.white : Colors.black,
+                              color: isWakeUpMode ? Colors.black : Colors.black,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
