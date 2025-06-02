@@ -15,21 +15,35 @@ class WeekdaySelector extends StatelessWidget {
     const dayLabels = ['SU', 'M', 'T', 'W', 'TH', 'F', 'S'];
 
     return Wrap(
-      spacing: 8,
+      spacing: 12,
+      runSpacing: 12,
       alignment: WrapAlignment.center,
       children: List.generate(7, (index) {
-        return ChoiceChip(
-          label: Text(dayLabels[index]),
-          selected: selectedDays.contains(index),
-          onSelected: (_) => onDayToggle(index),
-          selectedColor: const Color(0xFF8183D9),
-          backgroundColor: Colors.grey.shade200,
-          labelStyle: TextStyle(
-            color: selectedDays.contains(index) ? Colors.white : Colors.black,
-            fontWeight: FontWeight.bold,
+        final isSelected = selectedDays.contains(index);
+        return GestureDetector(
+          onTap: () => onDayToggle(index),
+          child: Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color:
+                  isSelected ? const Color(0xFF8183D9) : Colors.grey.shade200,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center, // ✅ 완전 중앙 정렬
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                dayLabels[index],
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: isSelected ? Colors.white : Colors.black,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ),
-          shape: CircleBorder(side: BorderSide.none),
-          padding: EdgeInsets.all(10),
         );
       }),
     );
