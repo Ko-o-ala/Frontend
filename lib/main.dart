@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/sleep_time/sleep_goal_screen.dart';
 
 import 'package:provider/provider.dart'; // ✅ provider 추가
-
 import 'package:my_app/login/login.dart';
+import 'package:my_app/signin/signin.dart';
 
 import 'home_page.dart';
 import 'sleep_dashboard/sleep_dashboard.dart';
@@ -18,16 +19,24 @@ import 'package:my_app/device/alarm/alarm_model.dart';
 import 'package:my_app/device/alarm/alarm_provider.dart'; // ✅ AlarmProvider 추가
 import 'package:my_app/device/alarm/alarm_dashboard_page.dart';
 import 'package:my_app/device/alarm/bedtime_provider.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
+
   Hive.registerAdapter(AlarmModelAdapter());
-  await Hive.openBox<AlarmModel>('alarms');
+
+  try {
+    await Hive.openBox<AlarmModel>('alarms');
+    print('✅ Hive box "alarms" opened successfully');
+  } catch (e) {
+    print('❌ Hive box "alarms" open failed: $e');
+  }
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AlarmProvider()), // ✅ 등록
+        ChangeNotifierProvider(create: (_) => AlarmProvider()),
         ChangeNotifierProvider(create: (_) => BedtimeModel()),
       ],
       child: const MyApp(),
@@ -54,10 +63,11 @@ class MyApp extends StatelessWidget {
 
         '/setting': (context) => const SettingsScreen(),
         '/notice': (context) => const Notice(),
-        '/alarm':(context) => const AlarmDashboardPage(),
+        '/alarm': (context) => const AlarmDashboardPage(),
 
         '/login': (context) => LoginScreen(),
-
+        '/sign-in': (context) => SignInScreen(),
+        '/time-set': (context) => SleepGoalScreen(),
       },
     );
   }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-
-void main() {
-  runApp(LoginApp());
-}
+import 'package:url_launcher/url_launcher.dart';
+import 'package:uni_links/uni_links.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class LoginApp extends StatelessWidget {
   @override
@@ -11,9 +11,83 @@ class LoginApp extends StatelessWidget {
   }
 }
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+
+    // ✅ 앱으로 돌아올 때 딥링크 감지
+    uriLinkStream.listen((uri) {
+      if (uri != null && uri.scheme == 'myapp' && uri.host == 'oauth') {
+        final code = uri.queryParameters['code'];
+        print('✅ 딥링크로 받은 인가 코드: $code');
+
+        _getAccessToken(code ?? '');
+      }
+    });
+  }
+
+  // ✅ access token 요청 → 사용자 정보 요청
+  void _getAccessToken(String code) async {
+    final tokenRes = await http.post(
+      Uri.parse('https://kauth.kakao.com/oauth/token'),
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: {
+        'grant_type': 'authorization_code',
+        'client_id': '210093e20b9250b8187c91a8863de561', // REST API 키
+        'redirect_uri': 'myapp://oauth',
+        'code': code,
+      },
+    );
+
+    if (tokenRes.statusCode == 200) {
+      final tokenData = json.decode(tokenRes.body);
+      final accessToken = tokenData['access_token'];
+      print('🟢 accessToken: $accessToken');
+
+      final userInfoRes = await http.get(
+        Uri.parse('https://kapi.kakao.com/v2/user/me'),
+        headers: {'Authorization': 'Bearer $accessToken'},
+      );
+
+      if (userInfoRes.statusCode == 200) {
+        final user = json.decode(userInfoRes.body);
+        print('🟢 사용자 정보: $user');
+
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/');
+        }
+      } else {
+        print('🟥 사용자 정보 요청 실패: ${userInfoRes.body}');
+      }
+    } else {
+      print('🟥 토큰 요청 실패: ${tokenRes.body}');
+    }
+  }
+
+  // ✅ 카카오 로그인 요청 → Netlify redirect로 이동
+  void _loginWithKakao() async {
+    final kakaoAuthUrl = Uri.parse(
+      'https://kauth.kakao.com/oauth/authorize'
+      '?client_id=210093e20b9250b8187c91a8863de561'
+      '&redirect_uri=https://transcendent-biscochitos-b8c877.netlify.app/'
+      '&response_type=code',
+    );
+
+    if (await canLaunchUrl(kakaoAuthUrl)) {
+      await launchUrl(kakaoAuthUrl, mode: LaunchMode.externalApplication);
+    } else {
+      print('카카오 로그인 URL 실행 실패');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +106,6 @@ class LoginScreen extends StatelessWidget {
                 children: [
                   IconButton(icon: Icon(Icons.arrow_back), onPressed: () {}),
                   SizedBox(height: 20),
-
                   Center(
                     child: Text(
                       '돌아오신 걸 환영합니다!',
@@ -43,14 +116,12 @@ class LoginScreen extends StatelessWidget {
                       textAlign: TextAlign.center,
                     ),
                   ),
-
                   SizedBox(height: 40),
-                  // 카카오 버튼
                   ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: Icon(Icons.facebook, color: Colors.white),
+                    onPressed: _loginWithKakao,
+                    icon: Icon(Icons.login, color: Colors.white),
                     label: Text(
-                      '카카오톡으로 계속하기',
+                      '카카오 계정으로 계속하기',
                       style: TextStyle(color: Colors.white),
                     ),
                     style: ElevatedButton.styleFrom(
@@ -61,11 +132,9 @@ class LoginScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-
                   SizedBox(height: 12),
-
                   SizedBox(
-                    width: 350, // 원하는 고정 가로 길이
+                    width: 350,
                     child: OutlinedButton.icon(
                       onPressed: () {},
                       icon: Image.asset('assets/google_icon.png', height: 20),
@@ -80,7 +149,6 @@ class LoginScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-
                   SizedBox(height: 24),
                   Center(
                     child: Text(
@@ -127,15 +195,11 @@ class LoginScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(25),
                       ),
                     ),
-                    child: Text(
-                      '로그인',
-                      style: TextStyle(color: Colors.white), // ✅ 글자색 흰색
-                    ),
+                    child: Text('로그인', style: TextStyle(color: Colors.white)),
                   ),
                   SizedBox(height: 10),
                   Center(child: Text('비밀번호를 잊으셨나요?')),
                   SizedBox(height: 40),
-
                   Center(
                     child: RichText(
                       text: TextSpan(

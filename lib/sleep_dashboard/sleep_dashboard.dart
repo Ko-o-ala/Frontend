@@ -3,8 +3,31 @@ import 'package:my_app/sleep_dashboard/monthly_sleep_screen.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'weekly_sleep_screen.dart';
 
-class SleepDashboard extends StatelessWidget {
-  const SleepDashboard({super.key});
+class SleepDashboard extends StatefulWidget {
+  final Duration? goalSleepDuration;
+
+  const SleepDashboard({Key? key, this.goalSleepDuration}) : super(key: key);
+
+  @override
+  State<SleepDashboard> createState() => _SleepDashboardState();
+}
+
+class _SleepDashboardState extends State<SleepDashboard> {
+  late String formattedDuration;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.goalSleepDuration != null) {
+      final hours = widget.goalSleepDuration!.inHours;
+      final minutes = widget.goalSleepDuration!.inMinutes % 60;
+      formattedDuration = '${hours}시간 ${minutes}분';
+      print('✅ 전달받은 수면 시간: $formattedDuration');
+    } else {
+      formattedDuration = '시간 미정';
+      print('⚠️ 전달된 수면 시간 없음');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +59,7 @@ class SleepDashboard extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Container(
+                width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
@@ -45,37 +69,44 @@ class SleepDashboard extends StatelessWidget {
                     end: Alignment.bottomRight,
                   ),
                 ),
-                child: const Text.rich(
+                child: Text.rich(
                   TextSpan(
                     children: [
-                      TextSpan(text: 'You have slept '),
+                      const TextSpan(text: 'You have slept '),
                       TextSpan(
-                        text: '4h 30m',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        text: formattedDuration,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      TextSpan(text: ' that is above your '),
-                      TextSpan(
+                      const TextSpan(text: ' that is above your '),
+                      const TextSpan(
                         text: 'recommendation',
                         style: TextStyle(decoration: TextDecoration.underline),
                       ),
                     ],
                   ),
-                  style: TextStyle(color: Colors.white),
+                  style: const TextStyle(color: Colors.white),
+                  softWrap: true,
+                  overflow: TextOverflow.visible,
+                  maxLines: 3,
                 ),
               ),
               const SizedBox(height: 20),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  _InfoItem(
-                    icon: Icons.nights_stay,
-                    time: '4시간 30분',
-                    label: '총 수면 시간',
+                children: [
+                  Expanded(
+                    child: _InfoItem(
+                      icon: Icons.nights_stay,
+                      time: '취침시간',
+                      label: '총 수면 시간',
+                    ),
                   ),
-                  _InfoItem(
-                    icon: Icons.access_time,
-                    time: '3시간',
-                    label: '목표 수면 시간',
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _InfoItem(
+                      icon: Icons.access_time,
+                      time: formattedDuration,
+                      label: '목표 수면 시간',
+                    ),
                   ),
                 ],
               ),
@@ -83,10 +114,26 @@ class SleepDashboard extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () async {
+                    final result = await Navigator.pushNamed(
+                      context,
+                      '/time-set',
+                    );
+                    if (result is Duration) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  SleepDashboard(goalSleepDuration: result),
+                        ),
+                      );
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     backgroundColor: Color(0xFF5890FF),
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -186,8 +233,8 @@ class SleepDashboard extends StatelessWidget {
           ),
         ),
       ),
-    ); // ✅ 이 줄이 함수의 return 닫힘!
-  } // ✅ 그리고 이 중괄호는 함수 자체 닫는 거!
+    );
+  }
 }
 
 class _InfoItem extends StatelessWidget {
@@ -207,18 +254,25 @@ class _InfoItem extends StatelessWidget {
       children: [
         Icon(icon, size: 32, color: Colors.blueAccent),
         const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              time,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                time,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                label,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ],
     );
