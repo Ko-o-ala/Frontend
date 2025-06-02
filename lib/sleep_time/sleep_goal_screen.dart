@@ -94,7 +94,7 @@ class _SleepGoalScreenState extends State<SleepGoalScreen> {
                           child: Text(
                             'Go to bed at',
                             style: TextStyle(
-                              color: isWakeUpMode ? Colors.black : Colors.black,
+                              color: isWakeUpMode ? Colors.black : Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -119,7 +119,7 @@ class _SleepGoalScreenState extends State<SleepGoalScreen> {
                           child: Text(
                             'Wake up at',
                             style: TextStyle(
-                              color: isWakeUpMode ? Colors.black : Colors.black,
+                              color: isWakeUpMode ? Colors.white : Colors.black,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
