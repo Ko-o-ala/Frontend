@@ -39,27 +39,32 @@ class _SignInScreenState extends State<SignInScreen> {
   Future<void> _handleSignUp() async {
     setState(() => isLoading = true);
 
-    final response = await http.post(
-      Uri.parse('https://yourapi.com/signup'), // ✅ 여기에 실제 API 주소 입력
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'name': nameController.text.trim(),
-        'username': idController.text.trim(),
-        'password': passwordController.text,
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:8000/users/signup'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userID': idController.text.trim(),
+          'name': nameController.text.trim(),
+          'password': passwordController.text,
+          'age': 25,
+          'gender': 'female',
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      final token = jsonDecode(response.body)['token'];
-      await storage.write(key: 'jwt', value: token);
-      Navigator.pushReplacementNamed(context, '/');
-    } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('회원가입 실패: ${response.body}')));
+      if (response.statusCode == 201) {
+        // 회원가입 성공 → 로그인 페이지로 이동
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, '/login');
+      } else {
+        throw Exception('회원가입 실패: ${response.body}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
-
-    setState(() => isLoading = false);
   }
 
   @override

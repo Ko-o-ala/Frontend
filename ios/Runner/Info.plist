@@ -49,6 +49,12 @@
 <array>
   <dict>
     <key>CFBundleURLSchemes</key>
+	<key>NSAppTransportSecurity</key>
+<dict>
+  <key>NSAllowsArbitraryLoads</key>
+  <true/>
+</dict>
+
     <array>
       <string>myapp</string>
     </array>
