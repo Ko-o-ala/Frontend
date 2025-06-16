@@ -9,7 +9,7 @@ class SignInScreen extends StatefulWidget {
 
 class _SignInScreenState extends State<SignInScreen> {
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
+  final TextEditingController idController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   bool isPasswordVisible = false;
@@ -18,14 +18,14 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   void dispose() {
     nameController.dispose();
-    emailController.dispose();
+    idController.dispose();
     passwordController.dispose();
     super.dispose();
   }
 
   bool get isFormValid {
     return nameController.text.isNotEmpty &&
-        emailController.text.contains('@') &&
+        idController.text.isNotEmpty &&
         passwordController.text.length >= 6 &&
         agreedToPrivacy;
   }
@@ -50,42 +50,6 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
               SizedBox(height: 30),
 
-              // 카카오 (Facebook 아이콘)
-              ElevatedButton.icon(
-                onPressed: () {},
-                icon: Icon(Icons.facebook, color: Colors.white),
-                label: Text('카카오톡으로 계속하기'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF8183D9),
-                  foregroundColor: Colors.white,
-                  minimumSize: Size(double.infinity, 48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                ),
-              ),
-              SizedBox(height: 12),
-
-              // Google 버튼
-              OutlinedButton.icon(
-                onPressed: () {},
-                icon: Image.asset('assets/google_icon.png', height: 20),
-                label: Text('GOOGLE로 계속하기'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  side: BorderSide(color: Colors.grey.shade300),
-                ),
-              ),
-              SizedBox(height: 24),
-
-              Center(
-                child: Text('이메일로 로그인하기', style: TextStyle(color: Colors.grey)),
-              ),
-              SizedBox(height: 16),
-
               // 이름 필드
               _buildInputField(
                 controller: nameController,
@@ -94,11 +58,10 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
               SizedBox(height: 12),
 
-              // 이메일 필드
               _buildInputField(
-                controller: emailController,
-                hint: '이메일',
-                isValid: emailController.text.contains('@'),
+                controller: idController,
+                hint: '아이디',
+                isValid: idController.text.isNotEmpty,
               ),
               SizedBox(height: 12),
 
@@ -106,6 +69,7 @@ class _SignInScreenState extends State<SignInScreen> {
               TextField(
                 controller: passwordController,
                 obscureText: !isPasswordVisible,
+                onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   hintText: '비밀번호',
                   filled: true,
@@ -163,7 +127,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 onPressed:
                     isFormValid
                         ? () {
-                          Navigator.pushReplacementNamed(context, '/welcome');
+                          Navigator.pushReplacementNamed(context, '/');
                         }
                         : null,
                 style: ElevatedButton.styleFrom(
