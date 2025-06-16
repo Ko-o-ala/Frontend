@@ -20,41 +20,43 @@ class opening extends StatelessWidget {
             child: SafeArea(
               child: Column(
                 children: [
-                  SizedBox(height: screenHeight * 0.8),
+                  SizedBox(height: screenHeight * 0.75), // 🔸 버튼 위치 조정
+                  // 🔸 홈으로 버튼
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                    child: Column(
-                      children: [
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/survey');
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black87,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            minimumSize: const Size(double.infinity, 50),
-                          ),
-                          child: const Text("시작하기"),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/home');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black87,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
                         ),
-                        const SizedBox(height: 12),
-                        OutlinedButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/home');
-                          },
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.white),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            minimumSize: const Size(double.infinity, 50),
-                          ),
-                          child: const Text("홈 화면으로 가기"),
+                        minimumSize: const Size(double.infinity, 50),
+                      ),
+                      child: const Text("홈으로"),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16), // 🔸 버튼 간격
+                  // 🔸 시작하기 버튼
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/survey');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black87,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
                         ),
-                      ],
+                        minimumSize: const Size(double.infinity, 50),
+                      ),
+                      child: const Text("시작하기"),
                     ),
                   ),
                 ],

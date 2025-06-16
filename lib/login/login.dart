@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:uni_links/uni_links.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class LoginApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: LoginScreen(), debugShowCheckedModeBanner: false);
+    return MaterialApp(
+      home: LoginScreen(),
+      debugShowCheckedModeBanner: false,
+      routes: {'/': (context) => HomeScreen()},
+    );
   }
 }
 
@@ -19,75 +19,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-
-    // ✅ 앱으로 돌아올 때 딥링크 감지
-    uriLinkStream.listen((uri) {
-      if (uri != null && uri.scheme == 'myapp' && uri.host == 'oauth') {
-        final code = uri.queryParameters['code'];
-        print('✅ 딥링크로 받은 인가 코드: $code');
-
-        _getAccessToken(code ?? '');
-      }
-    });
-  }
-
-  // ✅ access token 요청 → 사용자 정보 요청
-  void _getAccessToken(String code) async {
-    final tokenRes = await http.post(
-      Uri.parse('https://kauth.kakao.com/oauth/token'),
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: {
-        'grant_type': 'authorization_code',
-        'client_id': '210093e20b9250b8187c91a8863de561', // REST API 키
-        'redirect_uri': 'myapp://oauth',
-        'code': code,
-      },
-    );
-
-    if (tokenRes.statusCode == 200) {
-      final tokenData = json.decode(tokenRes.body);
-      final accessToken = tokenData['access_token'];
-      print('🟢 accessToken: $accessToken');
-
-      final userInfoRes = await http.get(
-        Uri.parse('https://kapi.kakao.com/v2/user/me'),
-        headers: {'Authorization': 'Bearer $accessToken'},
-      );
-
-      if (userInfoRes.statusCode == 200) {
-        final user = json.decode(userInfoRes.body);
-        print('🟢 사용자 정보: $user');
-
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/');
-        }
-      } else {
-        print('🟥 사용자 정보 요청 실패: ${userInfoRes.body}');
-      }
-    } else {
-      print('🟥 토큰 요청 실패: ${tokenRes.body}');
-    }
-  }
-
-  // ✅ 카카오 로그인 요청 → Netlify redirect로 이동
-  void _loginWithKakao() async {
-    final kakaoAuthUrl = Uri.parse(
-      'https://kauth.kakao.com/oauth/authorize'
-      '?client_id=210093e20b9250b8187c91a8863de561'
-      '&redirect_uri=https://transcendent-biscochitos-b8c877.netlify.app/'
-      '&response_type=code',
-    );
-
-    if (await canLaunchUrl(kakaoAuthUrl)) {
-      await launchUrl(kakaoAuthUrl, mode: LaunchMode.externalApplication);
-    } else {
-      print('카카오 로그인 URL 실행 실패');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,59 +35,25 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(icon: Icon(Icons.arrow_back), onPressed: () {}),
-                  SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20.0), // 높이 조절
+                    child: IconButton(
+                      icon: Icon(Icons.arrow_back),
+                      onPressed: () {},
+                    ),
+                  ),
+                  SizedBox(height: 40),
                   Center(
                     child: Text(
-                      '돌아오신 걸 환영합니다!',
+                      '로그인',
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                       textAlign: TextAlign.center,
                     ),
                   ),
                   SizedBox(height: 40),
-                  ElevatedButton.icon(
-                    onPressed: _loginWithKakao,
-                    icon: Icon(Icons.login, color: Colors.white),
-                    label: Text(
-                      '카카오 계정으로 계속하기',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF8183D9),
-                      minimumSize: Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  SizedBox(
-                    width: 350,
-                    child: OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: Image.asset('assets/google_icon.png', height: 20),
-                      label: Text('Google로 계속하기'),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: Size(0, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        side: BorderSide(color: Colors.grey.shade400),
-                        foregroundColor: Colors.black,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 24),
-                  Center(
-                    child: Text(
-                      '이메일로 로그인하기',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ),
-                  SizedBox(height: 16),
                   TextField(
                     controller: emailController,
                     decoration: InputDecoration(
@@ -169,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 12),
+                  SizedBox(height: 15),
                   TextField(
                     controller: passwordController,
                     obscureText: true,
@@ -183,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 20),
+                  SizedBox(height: 40),
                   ElevatedButton(
                     onPressed: () {
                       Navigator.pushReplacementNamed(context, '/');
@@ -197,9 +94,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     child: Text('로그인', style: TextStyle(color: Colors.white)),
                   ),
-                  SizedBox(height: 10),
+                  SizedBox(height: 30),
                   Center(child: Text('비밀번호를 잊으셨나요?')),
-                  SizedBox(height: 40),
+                  SizedBox(height: 25),
                   Center(
                     child: RichText(
                       text: TextSpan(
@@ -225,5 +122,12 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+}
+
+class HomeScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(body: Center(child: Text('홈 화면입니다')));
   }
 }
