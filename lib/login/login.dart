@@ -29,6 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     setState(() => _isLoading = true);
 
+    print('서버 요청 시작');
     final response = await http.post(
       Uri.parse('http://localhost:8000/users/login'),
       headers: {'Content-Type': 'application/json'},
@@ -38,14 +39,27 @@ class _LoginScreenState extends State<LoginScreen> {
       }),
     );
 
-    if (response.statusCode == 200) {
-      final token = json.decode(response.body)['token'];
+    print('서버 응답 완료');
+
+    print('응답 상태코드: ${response.statusCode}');
+    print('응답 본문: ${response.body}');
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final decoded = json.decode(response.body);
+      final token = decoded['data']['token'];
+      final username = decoded['data']['name'];
+
+      print('토큰 저장 시작');
       await storage.write(key: 'jwt', value: token);
-      Navigator.pushReplacementNamed(context, '/');
+      await storage.write(key: 'username', value: username);
+      print('토큰 저장 완료');
+
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/sleep');
     } else {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('로그인 실패. 이메일 또는 비밀번호를 확인하세요.')));
+      ).showSnackBar(SnackBar(content: Text('로그인 실패. 아이디 또는 비밀번호를 확인하세요.')));
     }
 
     setState(() => _isLoading = false);

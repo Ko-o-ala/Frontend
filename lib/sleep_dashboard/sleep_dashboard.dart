@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:my_app/sleep_dashboard/monthly_sleep_screen.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'weekly_sleep_screen.dart';
+
+final storage = FlutterSecureStorage();
 
 class SleepDashboard extends StatefulWidget {
   final Duration? goalSleepDuration;
@@ -13,20 +16,29 @@ class SleepDashboard extends StatefulWidget {
 }
 
 class _SleepDashboardState extends State<SleepDashboard> {
-  late String formattedDuration;
+  String formattedDuration = '시간 미정';
+  String username = '사용자';
 
   @override
   void initState() {
     super.initState();
+    _loadUsername();
+
     if (widget.goalSleepDuration != null) {
       final hours = widget.goalSleepDuration!.inHours;
       final minutes = widget.goalSleepDuration!.inMinutes % 60;
       formattedDuration = '${hours}시간 ${minutes}분';
       print('✅ 전달받은 수면 시간: $formattedDuration');
     } else {
-      formattedDuration = '시간 미정';
       print('⚠️ 전달된 수면 시간 없음');
     }
+  }
+
+  Future<void> _loadUsername() async {
+    final name = await storage.read(key: 'username');
+    setState(() {
+      username = name ?? '사용자';
+    });
   }
 
   @override
@@ -39,9 +51,12 @@ class _SleepDashboardState extends State<SleepDashboard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'USERNAME',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              Text(
+                username,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(height: 4),
               const Text(
@@ -85,9 +100,6 @@ class _SleepDashboardState extends State<SleepDashboard> {
                     ],
                   ),
                   style: const TextStyle(color: Colors.white),
-                  softWrap: true,
-                  overflow: TextOverflow.visible,
-                  maxLines: 3,
                 ),
               ),
               const SizedBox(height: 20),
@@ -132,7 +144,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: Color(0xFF5890FF),
+                    backgroundColor: const Color(0xFF5890FF),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -144,12 +156,12 @@ class _SleepDashboardState extends State<SleepDashboard> {
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
+                children: [
                   Text(
-                    '오늘 00님의 수면점수는..',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    '오늘 $username님의 수면점수는..',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  Text('수면점수 더 알아보기 >'),
+                  const Text('수면점수 더 알아보기 >'),
                 ],
               ),
               const SizedBox(height: 12),
@@ -162,7 +174,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
                     "70점",
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  progressColor: Color(0xFFF6D35F),
+                  progressColor: const Color(0xFFF6D35F),
                   backgroundColor: Colors.black,
                   circularStrokeCap: CircularStrokeCap.round,
                 ),
