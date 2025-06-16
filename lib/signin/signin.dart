@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -14,6 +17,9 @@ class _SignInScreenState extends State<SignInScreen> {
 
   bool isPasswordVisible = false;
   bool agreedToPrivacy = false;
+  bool isLoading = false;
+
+  final storage = FlutterSecureStorage();
 
   @override
   void dispose() {
@@ -30,6 +36,32 @@ class _SignInScreenState extends State<SignInScreen> {
         agreedToPrivacy;
   }
 
+  Future<void> _handleSignUp() async {
+    setState(() => isLoading = true);
+
+    final response = await http.post(
+      Uri.parse('https://yourapi.com/signup'), // ✅ 여기에 실제 API 주소 입력
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': nameController.text.trim(),
+        'username': idController.text.trim(),
+        'password': passwordController.text,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final token = jsonDecode(response.body)['token'];
+      await storage.write(key: 'jwt', value: token);
+      Navigator.pushReplacementNamed(context, '/');
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('회원가입 실패: ${response.body}')));
+    }
+
+    setState(() => isLoading = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -40,7 +72,10 @@ class _SignInScreenState extends State<SignInScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              IconButton(icon: Icon(Icons.arrow_back), onPressed: () {}),
+              IconButton(
+                icon: Icon(Icons.arrow_back),
+                onPressed: () => Navigator.pop(context),
+              ),
               SizedBox(height: 10),
               Center(
                 child: Text(
@@ -50,7 +85,6 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
               SizedBox(height: 30),
 
-              // 이름 필드
               _buildInputField(
                 controller: nameController,
                 hint: '이름',
@@ -65,7 +99,6 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
               SizedBox(height: 12),
 
-              // 비밀번호 필드
               TextField(
                 controller: passwordController,
                 obscureText: !isPasswordVisible,
@@ -95,7 +128,6 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
               SizedBox(height: 20),
 
-              // 개인정보 동의
               Row(
                 children: [
                   Checkbox(
@@ -122,14 +154,8 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
               SizedBox(height: 20),
 
-              // 시작하기 버튼
               ElevatedButton(
-                onPressed:
-                    isFormValid
-                        ? () {
-                          Navigator.pushReplacementNamed(context, '/');
-                        }
-                        : null,
+                onPressed: isFormValid && !isLoading ? _handleSignUp : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
                       isFormValid
@@ -141,7 +167,10 @@ class _SignInScreenState extends State<SignInScreen> {
                     borderRadius: BorderRadius.circular(25),
                   ),
                 ),
-                child: Text('시작하기'),
+                child:
+                    isLoading
+                        ? CircularProgressIndicator(color: Colors.white)
+                        : Text('시작하기'),
               ),
               SizedBox(height: 20),
             ],
