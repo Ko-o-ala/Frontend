@@ -22,13 +22,12 @@ class RealHomeScreen extends StatelessWidget {
               ),
             ),
 
-            // 캐릭터 이미지 (koala.png 사용)
             Expanded(
               child: Center(
                 child: Image.asset(
-                  'assets/images/koala.png',
-                  width: 180,
-                  height: 240,
+                  'lib/assets/koala.png',
+                  width: 300,
+                  height: 300,
                   fit: BoxFit.contain,
                 ),
               ),
