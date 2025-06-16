@@ -156,15 +156,10 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
         currentIndex: 2, // 현재 페이지가 '수면 현황'이므로 index 2
         type: BottomNavigationBarType.fixed,
         onTap: (index) {
-          if (index == 0) {
-            Navigator.pushNamed(context, '/'); // 홈
-          } else if (index == 1) {
-            Navigator.pushNamed(context, '/search'); // 탐색하기
-          } else if (index == 2) {
-            // 현재 화면이니까 아무 것도 안 함
-          } else if (index == 3) {
-            Navigator.pushNamed(context, '/settings'); // 설정
-          }
+          if (index == 0) Navigator.pushNamed(context, '/home');
+          if (index == 1) Navigator.pushNamed(context, '/sleep');
+          if (index == 2) {} // 현재 페이지
+          if (index == 3) Navigator.pushNamed(context, '/setting');
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
