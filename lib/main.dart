@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/mkhome/real_home.dart';
 import 'package:my_app/sleep_time/sleep_goal_screen.dart';
 
 import 'package:provider/provider.dart'; // ✅ provider 추가
@@ -68,6 +69,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => LoginScreen(),
         '/sign-in': (context) => SignInScreen(),
         '/time-set': (context) => SleepGoalScreen(),
+        '/real-home': (context) => RealHomeScreen(),
       },
     );
   }

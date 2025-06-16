@@ -34,6 +34,14 @@ class HomePage extends StatelessWidget {
               },
               child: const Text('회원가입으로 가기'),
             ),
+
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/real-home');
+              },
+              child: const Text('찐 홈으로 가기'),
+            ),
           ],
         ),
       ),
