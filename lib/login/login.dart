@@ -11,7 +11,10 @@ class LoginApp extends StatelessWidget {
     return MaterialApp(
       home: LoginScreen(),
       debugShowCheckedModeBanner: false,
-      routes: {'/': (context) => HomeScreen()},
+      routes: {
+        '/': (context) => HomeScreen(),
+        '/sleep': (context) => SleepScreen(), // 추가된 라우트
+      },
     );
   }
 }
@@ -49,10 +52,10 @@ class _LoginScreenState extends State<LoginScreen> {
       final token = decoded['data']['token'];
       final username = decoded['data']['name'];
 
-      print('토큰 저장 시작');
+      print('토큰 및 유저명 저장 시작');
       await storage.write(key: 'jwt', value: token);
       await storage.write(key: 'username', value: username);
-      print('토큰 저장 완료');
+      print('토큰 및 유저명 저장 완료');
 
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/sleep');
@@ -186,12 +189,37 @@ class HomeScreen extends StatelessWidget {
             icon: Icon(Icons.logout),
             onPressed: () async {
               await storage.delete(key: 'jwt');
+              await storage.delete(key: 'username');
               Navigator.pushReplacementNamed(context, '/');
             },
           ),
         ],
       ),
       body: Center(child: Text('로그인 완료!')),
+    );
+  }
+}
+
+class SleepScreen extends StatelessWidget {
+  final storage = FlutterSecureStorage();
+
+  Future<String> _loadUsername() async {
+    return await storage.read(key: 'username') ?? '사용자';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String>(
+      future: _loadUsername(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        return Scaffold(
+          appBar: AppBar(title: Text('수면 화면')),
+          body: Center(child: Text('${snapshot.data}아 안녕!')),
+        );
+      },
     );
   }
 }
