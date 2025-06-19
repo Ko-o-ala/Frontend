@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:my_app/sleep_dashboard/monthly_sleep_screen.dart';
+import 'package:my_app/sleep_dashboard/weekly_sleep_screen.dart';
 import 'package:percent_indicator/percent_indicator.dart';
-import 'weekly_sleep_screen.dart';
+import 'package:my_app/bottomNavigationBar.dart';
 
 final storage = FlutterSecureStorage();
 
@@ -193,20 +194,18 @@ class _SleepDashboardState extends State<SleepDashboard> {
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        type: BottomNavigationBarType.fixed,
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: 1,
         onTap: (index) {
+          // 여기서는 '홈', '사운드', '설정'만 처리 (수면은 내부에서 처리함)
           if (index == 0) {
-            Navigator.pushNamed(context, '/');
+            Navigator.pushReplacementNamed(context, '/real-home');
+          } else if (index == 2) {
+            Navigator.pushReplacementNamed(context, '/sound');
+          } else if (index == 3) {
+            Navigator.pushReplacementNamed(context, '/setting');
           }
         },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: '수면'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: '사운드'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: '설정'),
-        ],
       ),
     );
   }
@@ -215,19 +214,23 @@ class _SleepDashboardState extends State<SleepDashboard> {
     return GestureDetector(
       onTap: () {
         if (label == 'Weeks') {
-          Navigator.push(
+          Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const WeeklySleepScreen()),
+            MaterialPageRoute(
+              builder: (_) => WeeklySleepScreen(),
+            ), // ❌ const 제거
           );
         } else if (label == 'Months') {
-          Navigator.push(
+          Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => MonthlySleepScreen()),
+            MaterialPageRoute(
+              builder: (_) => MonthlySleepScreen(),
+            ), // ❌ const 제거
           );
-        } else if (label == "Days") {
-          Navigator.push(
+        } else if (label == 'Days') {
+          Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const SleepDashboard()),
+            MaterialPageRoute(builder: (_) => SleepDashboard()), // ❌ const 제거
           );
         }
       },
