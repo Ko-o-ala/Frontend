@@ -2,24 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/gestures.dart';
 
 final storage = FlutterSecureStorage();
 
-class LoginApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: LoginScreen(),
-      debugShowCheckedModeBanner: false,
-      routes: {
-        '/': (context) => HomeScreen(),
-        '/sleep': (context) => SleepScreen(), // 추가된 라우트
-      },
-    );
-  }
-}
-
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -27,12 +16,30 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController idController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  late TapGestureRecognizer _tapRecognizer;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tapRecognizer = TapGestureRecognizer()..onTap = _handleSignUp;
+  }
+
+  @override
+  void dispose() {
+    idController.dispose();
+    passwordController.dispose();
+    _tapRecognizer.dispose(); // 메모리 누수 방지
+    super.dispose();
+  }
+
+  void _handleSignUp() {
+    Navigator.pushNamed(context, '/sign-in');
+  }
 
   Future<void> _login() async {
     setState(() => _isLoading = true);
 
-    print('서버 요청 시작');
     final response = await http.post(
       Uri.parse('http://localhost:8000/users/login'),
       headers: {'Content-Type': 'application/json'},
@@ -42,20 +49,13 @@ class _LoginScreenState extends State<LoginScreen> {
       }),
     );
 
-    print('서버 응답 완료');
-
-    print('응답 상태코드: ${response.statusCode}');
-    print('응답 본문: ${response.body}');
-
     if (response.statusCode == 200 || response.statusCode == 201) {
       final decoded = json.decode(response.body);
       final token = decoded['data']['token'];
       final username = decoded['data']['name'];
 
-      print('토큰 및 유저명 저장 시작');
       await storage.write(key: 'jwt', value: token);
       await storage.write(key: 'username', value: username);
-      print('토큰 및 유저명 저장 완료');
 
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/sleep');
@@ -86,12 +86,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   Padding(
                     padding: const EdgeInsets.only(top: 20.0),
                     child: IconButton(
-                      icon: Icon(Icons.arrow_back),
-                      onPressed: () {},
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () {
+                        Navigator.pushReplacementNamed(context, '/');
+                      },
                     ),
                   ),
-                  SizedBox(height: 40),
-                  Center(
+                  const SizedBox(height: 40),
+                  const Center(
                     child: Text(
                       '로그인',
                       style: TextStyle(
@@ -100,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 40),
+                  const SizedBox(height: 40),
                   TextField(
                     controller: idController,
                     decoration: InputDecoration(
@@ -113,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 15),
+                  const SizedBox(height: 15),
                   TextField(
                     controller: passwordController,
                     obscureText: true,
@@ -127,45 +129,46 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 40),
+                  const SizedBox(height: 40),
                   ElevatedButton(
                     onPressed: _isLoading ? null : _login,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF8183D9),
-                      minimumSize: Size(double.infinity, 50),
+                      backgroundColor: const Color(0xFF8183D9),
+                      minimumSize: const Size(double.infinity, 50),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(25),
                       ),
                     ),
                     child:
                         _isLoading
-                            ? CircularProgressIndicator(color: Colors.white)
-                            : Text(
+                            ? const CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                            : const Text(
                               '로그인',
                               style: TextStyle(color: Colors.white),
                             ),
                   ),
-                  SizedBox(height: 30),
-                  Center(child: Text('비밀번호를 잊으셨나요?')),
-                  SizedBox(height: 25),
+                  const SizedBox(height: 30),
                   Center(
                     child: RichText(
                       text: TextSpan(
                         text: '계정이 없으신가요? ',
-                        style: TextStyle(color: Colors.black),
+                        style: const TextStyle(color: Colors.black),
                         children: [
                           TextSpan(
                             text: '회원가입하기',
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Color(0xFF8183D9),
                               fontWeight: FontWeight.bold,
                             ),
+                            recognizer: _tapRecognizer,
                           ),
                         ],
                       ),
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -183,10 +186,10 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('홈 화면'),
+        title: const Text('홈 화면'),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: const Icon(Icons.logout),
             onPressed: () async {
               await storage.delete(key: 'jwt');
               await storage.delete(key: 'username');
@@ -195,7 +198,7 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(child: Text('로그인 완료!')),
+      body: const Center(child: Text('로그인 완료!')),
     );
   }
 }
@@ -213,10 +216,12 @@ class SleepScreen extends StatelessWidget {
       future: _loadUsername(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
         return Scaffold(
-          appBar: AppBar(title: Text('수면 화면')),
+          appBar: AppBar(title: const Text('수면 화면')),
           body: Center(child: Text('${snapshot.data}아 안녕!')),
         );
       },

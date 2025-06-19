@@ -67,7 +67,7 @@ class MyApp extends StatelessWidget {
         '/alarm': (context) => const AlarmDashboardPage(),
 
         '/login': (context) => LoginScreen(),
-        '/sign-in': (context) => SignInScreen(),
+        '/sign-in': (context) => const SignInScreen(),
         '/time-set': (context) => SleepGoalScreen(),
         '/real-home': (context) => RealHomeScreen(),
       },
