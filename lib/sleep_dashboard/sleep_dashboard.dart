@@ -4,6 +4,7 @@ import 'package:my_app/sleep_dashboard/monthly_sleep_screen.dart';
 import 'package:my_app/sleep_dashboard/weekly_sleep_screen.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:my_app/bottomNavigationBar.dart';
+import 'package:my_app/TopNav.dart'; // ← TopNav 추가
 
 final storage = FlutterSecureStorage();
 
@@ -19,6 +20,7 @@ class SleepDashboard extends StatefulWidget {
 class _SleepDashboardState extends State<SleepDashboard> {
   String formattedDuration = '시간 미정';
   String username = '사용자';
+  bool _isLoggedIn = false; // 로그인 상태
 
   @override
   void initState() {
@@ -39,12 +41,28 @@ class _SleepDashboardState extends State<SleepDashboard> {
     final name = await storage.read(key: 'username');
     setState(() {
       username = name ?? '사용자';
+      _isLoggedIn = name != null;
+    });
+  }
+
+  Future<void> _handleLogout() async {
+    await storage.delete(key: 'username');
+    setState(() {
+      username = '사용자';
+      _isLoggedIn = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: TopNav(
+        isLoggedIn: _isLoggedIn,
+        onLogin: () {
+          Navigator.pushNamed(context, '/login');
+        },
+        onLogout: _handleLogout,
+      ),
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -109,7 +127,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
                   Expanded(
                     child: _InfoItem(
                       icon: Icons.nights_stay,
-                      time: '취침시간',
+                      time: '총 수면 시간',
                       label: '총 수면 시간',
                     ),
                   ),
@@ -145,7 +163,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: const Color(0xFF5890FF),
+                    backgroundColor: const Color(0xFF8183D9),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -197,7 +215,6 @@ class _SleepDashboardState extends State<SleepDashboard> {
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: 1,
         onTap: (index) {
-          // 여기서는 '홈', '사운드', '설정'만 처리 (수면은 내부에서 처리함)
           if (index == 0) {
             Navigator.pushReplacementNamed(context, '/real-home');
           } else if (index == 2) {
@@ -216,28 +233,24 @@ class _SleepDashboardState extends State<SleepDashboard> {
         if (label == 'Weeks') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (_) => WeeklySleepScreen(),
-            ), // ❌ const 제거
+            MaterialPageRoute(builder: (_) => WeeklySleepScreen()),
           );
         } else if (label == 'Months') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (_) => MonthlySleepScreen(),
-            ), // ❌ const 제거
+            MaterialPageRoute(builder: (_) => MonthlySleepScreen()),
           );
         } else if (label == 'Days') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => SleepDashboard()), // ❌ const 제거
+            MaterialPageRoute(builder: (_) => SleepDashboard()),
           );
         }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF5890FF) : Colors.grey[200],
+          color: selected ? const Color(0xFF8183D9) : Colors.grey[200],
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
