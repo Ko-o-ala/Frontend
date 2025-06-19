@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:my_app/TopNav.dart'; // ← TopNav 추가
+import 'package:my_app/bottomNavigationBar.dart'; // ← CustomBottomNavBar 추가
 
 class RealHomeScreen extends StatefulWidget {
   const RealHomeScreen({super.key});
@@ -15,7 +17,9 @@ class _RealHomeScreenState extends State<RealHomeScreen>
   late stt.SpeechToText _speech;
   bool _isListening = false;
   String _text = '🎤 여기에 인식된 텍스트가 표시됩니다';
-  String _username = ''; // <- 사용자 이름
+  String _username = '';
+  bool _isLoggedIn = false; // ← 로그인 상태
+  int _currentIndex = 0;
 
   late AnimationController _animationController;
   late Animation<double> _animation;
@@ -23,19 +27,19 @@ class _RealHomeScreenState extends State<RealHomeScreen>
   @override
   void initState() {
     super.initState();
-
-    _loadUsername(); // 사용자 이름 불러오기
+    _loadUsername();
 
     _speech = stt.SpeechToText();
 
     _animationController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 600),
     );
     _animation = Tween<double>(
       begin: 0.8,
       end: 1.2,
     ).chain(CurveTween(curve: Curves.easeInOut)).animate(_animationController);
+
     _animationController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         _animationController.reverse();
@@ -47,8 +51,19 @@ class _RealHomeScreenState extends State<RealHomeScreen>
 
   Future<void> _loadUsername() async {
     final prefs = await SharedPreferences.getInstance();
+    final username = prefs.getString('username') ?? '';
     setState(() {
-      _username = prefs.getString('username') ?? '';
+      _username = username;
+      _isLoggedIn = username.isNotEmpty;
+    });
+  }
+
+  Future<void> _handleLogout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('username');
+    setState(() {
+      _username = '';
+      _isLoggedIn = false;
     });
   }
 
@@ -99,6 +114,13 @@ class _RealHomeScreenState extends State<RealHomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: TopNav(
+        isLoggedIn: _isLoggedIn,
+        onLogin: () {
+          Navigator.pushNamed(context, '/login');
+        },
+        onLogout: _handleLogout,
+      ),
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
@@ -107,8 +129,11 @@ class _RealHomeScreenState extends State<RealHomeScreen>
               Padding(
                 padding: const EdgeInsets.only(top: 20),
                 child: Text(
-                  '${_username}아 안녕!',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  '${_username}님, 안녕하세요!',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             Expanded(
@@ -123,7 +148,7 @@ class _RealHomeScreenState extends State<RealHomeScreen>
                       fit: BoxFit.contain,
                     ),
                     const SizedBox(height: 20),
-                    Text(
+                    const Text(
                       '당신의 이야기를 들려주세요!',
                       style: TextStyle(
                         fontSize: 20,
@@ -133,7 +158,7 @@ class _RealHomeScreenState extends State<RealHomeScreen>
                     const SizedBox(height: 12),
                     Text(
                       _text,
-                      style: TextStyle(fontSize: 16),
+                      style: const TextStyle(fontSize: 16),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -145,13 +170,16 @@ class _RealHomeScreenState extends State<RealHomeScreen>
               child: Column(
                 children: [
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    margin: EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade200,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text('크리스마스까지 며칠 남았어?'),
+                    child: const Text('크리스마스까지 며칠 남았어?'),
                   ),
                   GestureDetector(
                     onTap: _listen,
@@ -162,12 +190,13 @@ class _RealHomeScreenState extends State<RealHomeScreen>
                         return Transform.scale(
                           scale: scale,
                           child: Container(
-                            padding: EdgeInsets.all(20),
+                            padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: _isListening ? Colors.red : Colors.blue,
+                              color:
+                                  _isListening ? Colors.red : Color(0xFF8183D9),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
+                            child: const Icon(
                               Icons.mic,
                               color: Colors.white,
                               size: 32,
@@ -182,6 +211,15 @@ class _RealHomeScreenState extends State<RealHomeScreen>
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+          // 탭에 따른 추가 로직이 필요하면 여기에 구현
+        },
       ),
     );
   }
