@@ -10,9 +10,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-  kakao_flutter_sdk_common: ^1.9.7+3
-  kakao_flutter_sdk_user: ^1.4.3
-
   speech_to_text: ^7.0.0
   flutter_sound: ^9.28.0
   permission_handler: ^12.0.0+1
@@ -23,11 +20,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   percent_indicator: ^4.2.2
 
-  kakao_flutter_sdk: ^1.9.7+3
-  url_launcher: ^6.1.7
-  uni_links: ^0.5.1
-  http: ^0.13.5
-
   provider: ^6.1.5
   hive: ^2.2.3
   hive_flutter: ^1.1.0
@@ -35,6 +27,7 @@ dependencies:
   url_launcher: ^6.2.5
   uni_links: ^0.5.1
   shared_preferences: ^2.0.15
+  just_audio: ^0.10.4
 
 
 dev_dependencies:
@@ -51,3 +44,5 @@ flutter:
     - lib/assets/profile.jpg
     - lib/assets/koala.png
     - assets/google_icon.png
+    - assets/sounds/
+   

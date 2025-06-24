@@ -42,6 +42,14 @@ class HomePage extends StatelessWidget {
               },
               child: const Text('찐 홈으로 가기'),
             ),
+
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/sound');
+              },
+              child: const Text('수면 사운드 추천으로 가기'),
+            ),
           ],
         ),
       ),
