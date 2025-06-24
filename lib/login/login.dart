@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uni_links/uni_links.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-class LoginApp extends StatelessWidget {
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter/gestures.dart';
+
+final storage = FlutterSecureStorage();
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(home: LoginScreen(), debugShowCheckedModeBanner: false);
-  }
+  State<LoginScreen> createState() => _LoginScreenState();
 }
+
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -18,7 +28,62 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController idController = TextEditingController();
+
   final TextEditingController passwordController = TextEditingController();
+  late TapGestureRecognizer _tapRecognizer;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tapRecognizer = TapGestureRecognizer()..onTap = _handleSignUp;
+  }
+
+  @override
+  void dispose() {
+    idController.dispose();
+    passwordController.dispose();
+    _tapRecognizer.dispose(); // 메모리 누수 방지
+    super.dispose();
+  }
+
+  void _handleSignUp() {
+    Navigator.pushNamed(context, '/sign-in');
+  }
+
+  Future<void> _login() async {
+    setState(() => _isLoading = true);
+
+    final response = await http.post(
+      Uri.parse('http://localhost:8000/users/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'userID': idController.text.trim(),
+        'password': passwordController.text.trim(),
+      }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final decoded = json.decode(response.body);
+      final token = decoded['data']['token'];
+      final username = decoded['data']['name'];
+
+      await storage.write(key: 'jwt', value: token);
+      await storage.write(key: 'username', value: username);
+
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/sleep');
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('로그인 실패. 아이디 또는 비밀번호를 확인하세요.')));
+    }
+
+    setState(() => _isLoading = false);
+  }
 
   // ✅ REST 방식 Kakao 로그인 함수
   void _loginWithKakao() async {
@@ -96,15 +161,30 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+
                   IconButton(icon: Icon(Icons.arrow_back), onPressed: () {}),
                   SizedBox(height: 20),
                   Center(
+
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20.0),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () {
+                        Navigator.pushReplacementNamed(context, '/');
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  const Center(
+
                     child: Text(
-                      '돌아오신 걸 환영합니다!',
+                      '로그인',
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
+
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -149,10 +229,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   SizedBox(height: 16),
+
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+
                   TextField(
-                    controller: emailController,
+                    controller: idController,
                     decoration: InputDecoration(
-                      hintText: '이메일',
+                      hintText: '아이디',
                       filled: true,
                       fillColor: Colors.grey.shade100,
                       border: OutlineInputBorder(
@@ -161,7 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 15),
                   TextField(
                     controller: passwordController,
                     obscureText: true,
@@ -175,47 +260,110 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 40),
                   ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(context, '/');
-                    },
+                    onPressed: _isLoading ? null : _login,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF8183D9),
-                      minimumSize: Size(double.infinity, 50),
+                      backgroundColor: const Color(0xFF8183D9),
+                      minimumSize: const Size(double.infinity, 50),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(25),
                       ),
                     ),
+
                     child: Text('로그인', style: TextStyle(color: Colors.white)),
                   ),
                   SizedBox(height: 10),
                   Center(child: Text('비밀번호를 잊으셨나요?')),
                   SizedBox(height: 40),
+
+                    child:
+                        _isLoading
+                            ? const CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                            : const Text(
+                              '로그인',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                  ),
+                  const SizedBox(height: 30),
+
                   Center(
                     child: RichText(
                       text: TextSpan(
                         text: '계정이 없으신가요? ',
-                        style: TextStyle(color: Colors.black),
+                        style: const TextStyle(color: Colors.black),
                         children: [
                           TextSpan(
                             text: '회원가입하기',
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Color(0xFF8183D9),
                               fontWeight: FontWeight.bold,
                             ),
+                            recognizer: _tapRecognizer,
                           ),
                         ],
                       ),
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class HomeScreen extends StatelessWidget {
+  final storage = FlutterSecureStorage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('홈 화면'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await storage.delete(key: 'jwt');
+              await storage.delete(key: 'username');
+              Navigator.pushReplacementNamed(context, '/');
+            },
+          ),
+        ],
+      ),
+      body: const Center(child: Text('로그인 완료!')),
+    );
+  }
+}
+
+class SleepScreen extends StatelessWidget {
+  final storage = FlutterSecureStorage();
+
+  Future<String> _loadUsername() async {
+    return await storage.read(key: 'username') ?? '사용자';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String>(
+      future: _loadUsername(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return Scaffold(
+          appBar: AppBar(title: const Text('수면 화면')),
+          body: Center(child: Text('${snapshot.data}아 안녕!')),
+        );
+      },
     );
   }
 }
