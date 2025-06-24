@@ -49,9 +49,6 @@ class HomePage extends StatelessWidget {
                 Navigator.pushNamed(context, '/sound');
               },
               child: const Text('사운드 페이지 가기'),
-              ),
-
-
             ),
           ],
         ),
