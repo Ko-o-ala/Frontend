@@ -16,15 +16,15 @@ class TopNav extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      title: Text('당신의 하루'),
+      title: const Text('당신의 하루', style: TextStyle(color: Colors.white)),
       centerTitle: true,
-      backgroundColor: Color(0xFF8183D9),
+      backgroundColor: const Color(0xFF8183D9),
       actions: [
         TextButton(
           onPressed: isLoggedIn ? onLogout : onLogin,
           child: Text(
             isLoggedIn ? '로그아웃' : '로그인',
-            style: TextStyle(color: Colors.white),
+            style: const TextStyle(color: Colors.white),
           ),
         ),
       ],
