@@ -14,7 +14,14 @@ class CustomBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return BottomNavigationBar(
       currentIndex: currentIndex,
-      onTap: onTap,
+      onTap: (index) {
+        if (index == 1) {
+          // '수면' 탭 누르면 /sleep으로 이동
+          Navigator.pushNamed(context, '/sleep');
+        } else {
+          onTap(index); // 나머지는 부모에서 처리
+        }
+      },
       type: BottomNavigationBarType.fixed,
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),

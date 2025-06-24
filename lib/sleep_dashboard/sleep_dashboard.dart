@@ -1,14 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:my_app/sleep_dashboard/monthly_sleep_screen.dart';
+import 'package:my_app/sleep_dashboard/weekly_sleep_screen.dart';
 import 'package:percent_indicator/percent_indicator.dart';
-import 'weekly_sleep_screen.dart';
+import 'package:my_app/bottomNavigationBar.dart';
+import 'package:my_app/TopNav.dart'; // ← TopNav 추가
 
-class SleepDashboard extends StatelessWidget {
-  const SleepDashboard({super.key});
+final storage = FlutterSecureStorage();
+
+class SleepDashboard extends StatefulWidget {
+  final Duration? goalSleepDuration;
+
+  const SleepDashboard({Key? key, this.goalSleepDuration}) : super(key: key);
+
+  @override
+  State<SleepDashboard> createState() => _SleepDashboardState();
+}
+
+class _SleepDashboardState extends State<SleepDashboard> {
+  String formattedDuration = '시간 미정';
+  String username = '사용자';
+  bool _isLoggedIn = false; // 로그인 상태
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsername();
+
+    if (widget.goalSleepDuration != null) {
+      final hours = widget.goalSleepDuration!.inHours;
+      final minutes = widget.goalSleepDuration!.inMinutes % 60;
+      formattedDuration = '${hours}시간 ${minutes}분';
+      print('✅ 전달받은 수면 시간: $formattedDuration');
+    } else {
+      print('⚠️ 전달된 수면 시간 없음');
+    }
+  }
+
+  Future<void> _loadUsername() async {
+    final name = await storage.read(key: 'username');
+    setState(() {
+      username = name ?? '사용자';
+      _isLoggedIn = name != null;
+    });
+  }
+
+  Future<void> _handleLogout() async {
+    await storage.delete(key: 'username');
+    setState(() {
+      username = '사용자';
+      _isLoggedIn = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: TopNav(
+        isLoggedIn: _isLoggedIn,
+        onLogin: () {
+          Navigator.pushNamed(context, '/login');
+        },
+        onLogout: _handleLogout,
+      ),
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -16,9 +70,12 @@ class SleepDashboard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'USERNAME',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              Text(
+                username,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(height: 4),
               const Text(
@@ -36,6 +93,7 @@ class SleepDashboard extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Container(
+                width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
@@ -45,37 +103,41 @@ class SleepDashboard extends StatelessWidget {
                     end: Alignment.bottomRight,
                   ),
                 ),
-                child: const Text.rich(
+                child: Text.rich(
                   TextSpan(
                     children: [
-                      TextSpan(text: 'You have slept '),
+                      const TextSpan(text: 'You have slept '),
                       TextSpan(
-                        text: '4h 30m',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        text: formattedDuration,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      TextSpan(text: ' that is above your '),
-                      TextSpan(
+                      const TextSpan(text: ' that is above your '),
+                      const TextSpan(
                         text: 'recommendation',
                         style: TextStyle(decoration: TextDecoration.underline),
                       ),
                     ],
                   ),
-                  style: TextStyle(color: Colors.white),
+                  style: const TextStyle(color: Colors.white),
                 ),
               ),
               const SizedBox(height: 20),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  _InfoItem(
-                    icon: Icons.nights_stay,
-                    time: '4시간 30분',
-                    label: '총 수면 시간',
+                children: [
+                  Expanded(
+                    child: _InfoItem(
+                      icon: Icons.nights_stay,
+                      time: '총 수면 시간',
+                      label: '총 수면 시간',
+                    ),
                   ),
-                  _InfoItem(
-                    icon: Icons.access_time,
-                    time: '3시간',
-                    label: '목표 수면 시간',
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _InfoItem(
+                      icon: Icons.access_time,
+                      time: formattedDuration,
+                      label: '목표 수면 시간',
+                    ),
                   ),
                 ],
               ),
@@ -83,10 +145,26 @@ class SleepDashboard extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () async {
+                    final result = await Navigator.pushNamed(
+                      context,
+                      '/time-set',
+                    );
+                    if (result is Duration) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  SleepDashboard(goalSleepDuration: result),
+                        ),
+                      );
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: Color(0xFF5890FF),
+                    backgroundColor: const Color(0xFF8183D9),
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -97,12 +175,12 @@ class SleepDashboard extends StatelessWidget {
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
+                children: [
                   Text(
-                    '오늘 00님의 수면점수는..',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    '오늘 $username님의 수면점수는..',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  Text('수면점수 더 알아보기 >'),
+                  const Text('수면점수 더 알아보기 >'),
                 ],
               ),
               const SizedBox(height: 12),
@@ -115,7 +193,7 @@ class SleepDashboard extends StatelessWidget {
                     "70점",
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  progressColor: Color(0xFFF6D35F),
+                  progressColor: const Color(0xFFF6D35F),
                   backgroundColor: Colors.black,
                   circularStrokeCap: CircularStrokeCap.round,
                 ),
@@ -134,20 +212,17 @@ class SleepDashboard extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        type: BottomNavigationBarType.fixed,
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: 1,
         onTap: (index) {
           if (index == 0) {
-            Navigator.pushNamed(context, '/');
+            Navigator.pushReplacementNamed(context, '/real-home');
+          } else if (index == 2) {
+            Navigator.pushReplacementNamed(context, '/sound');
+          } else if (index == 3) {
+            Navigator.pushReplacementNamed(context, '/setting');
           }
         },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: '수면'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: '사운드'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: '설정'),
-        ],
       ),
     );
   }
@@ -156,26 +231,26 @@ class SleepDashboard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         if (label == 'Weeks') {
-          Navigator.push(
+          Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const WeeklySleepScreen()),
+            MaterialPageRoute(builder: (_) => WeeklySleepScreen()),
           );
         } else if (label == 'Months') {
-          Navigator.push(
+          Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => MonthlySleepScreen()),
+            MaterialPageRoute(builder: (_) => MonthlySleepScreen()),
           );
-        } else if (label == "Days") {
-          Navigator.push(
+        } else if (label == 'Days') {
+          Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const SleepDashboard()),
+            MaterialPageRoute(builder: (_) => SleepDashboard()),
           );
         }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF5890FF) : Colors.grey[200],
+          color: selected ? const Color(0xFF8183D9) : Colors.grey[200],
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -186,8 +261,8 @@ class SleepDashboard extends StatelessWidget {
           ),
         ),
       ),
-    ); // ✅ 이 줄이 함수의 return 닫힘!
-  } // ✅ 그리고 이 중괄호는 함수 자체 닫는 거!
+    );
+  }
 }
 
 class _InfoItem extends StatelessWidget {
@@ -207,18 +282,25 @@ class _InfoItem extends StatelessWidget {
       children: [
         Icon(icon, size: 32, color: Colors.blueAccent),
         const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              time,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                time,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                label,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ],
     );

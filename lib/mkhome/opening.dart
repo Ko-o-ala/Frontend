@@ -12,10 +12,7 @@ class opening extends StatelessWidget {
         children: [
           // 🔹 배경 이미지
           Positioned.fill(
-            child: Image.asset(
-              'lib/assets/opening.png',
-              fit: BoxFit.cover,
-            ),
+            child: Image.asset('lib/assets/opening.png', fit: BoxFit.cover),
           ),
 
           // 🔹 텍스트 & 버튼 레이어
@@ -24,7 +21,6 @@ class opening extends StatelessWidget {
               child: Column(
                 children: [
                   SizedBox(height: screenHeight * 0.75), // 🔸 버튼 위치 조정
-
                   // 🔸 홈으로 버튼
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32.0),
@@ -45,7 +41,6 @@ class opening extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 16), // 🔸 버튼 간격
-
                   // 🔸 시작하기 버튼
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32.0),
