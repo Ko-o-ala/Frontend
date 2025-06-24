@@ -29,7 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     idController.dispose();
     passwordController.dispose();
-    _tapRecognizer.dispose(); // 메모리 누수 방지
+    _tapRecognizer.dispose();
     super.dispose();
   }
 
@@ -41,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     final response = await http.post(
-      Uri.parse('http://localhost:8000/users/login'),
+      Uri.parse('https://kooala.tassoo.uk/users/login'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'userID': idController.text.trim(),
@@ -60,9 +60,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/sleep');
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('로그인 실패. 아이디 또는 비밀번호를 확인하세요.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('로그인 실패. 아이디 또는 비밀번호를 확인하세요.')),
+      );
     }
 
     setState(() => _isLoading = false);
