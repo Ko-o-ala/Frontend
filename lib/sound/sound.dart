@@ -103,7 +103,11 @@ class _SoundScreenState extends State<SoundScreen> {
     final pageCount = (soundFiles.length / perPage).ceil();
 
     return Scaffold(
+
+      backgroundColor: const Color(0xFFF9F8FF),
+
       backgroundColor: Color(0xFFF9F8FF),
+
       appBar: TopNav(isLoggedIn: true, onLogin: () {}, onLogout: () {}),
       body: Column(
         children: [
@@ -137,9 +141,15 @@ class _SoundScreenState extends State<SoundScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+
+                      color: selected ? const Color(0xFFEDEBFF) : Colors.white,
+                      child: ListTile(
+                        leading: const CircleAvatar(
+
                       color: selected ? Color(0xFFEDEBFF) : Colors.white,
                       child: ListTile(
                         leading: CircleAvatar(
+
                           backgroundColor: Color(0xFF8183D9),
                           child: Icon(Icons.music_note, color: Colors.white),
                         ),
@@ -155,7 +165,12 @@ class _SoundScreenState extends State<SoundScreen> {
                               ? Icons.pause_circle
                               : Icons.play_circle,
                           size: 32,
+
+                          color:
+                              selected ? const Color(0xFF8183D9) : Colors.grey,
+
                           color: selected ? Color(0xFF8183D9) : Colors.grey,
+
                         ),
                         onTap: () => _playSound(file),
                       ),
@@ -175,7 +190,11 @@ class _SoundScreenState extends State<SoundScreen> {
                   onPressed: () => controller.jumpToPage(i),
                   style: OutlinedButton.styleFrom(
                     backgroundColor:
-                        currentPage == i ? Color(0xFF8183D9) : Colors.white,
+
+                        currentPage == i
+                            ? const Color(0xFF8183D9)
+                            : Colors.white,
+
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -192,11 +211,16 @@ class _SoundScreenState extends State<SoundScreen> {
           ),
           if (currentPlaying != null)
             Container(
-              color: Colors.white,
+
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
+              ),
               child: Row(
                 children: [
-                  Icon(Icons.music_note, color: Color(0xFF8183D9)),
+                  const Icon(Icons.music_note, color: Color(0xFF8183D9)),
+
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -209,7 +233,9 @@ class _SoundScreenState extends State<SoundScreen> {
                   ),
                   IconButton(
                     icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
-                    color: Color(0xFF8183D9),
+
+                    color: const Color(0xFF8183D9),
+
                     onPressed: () {
                       if (isPlaying)
                         player.pause();
@@ -218,15 +244,19 @@ class _SoundScreenState extends State<SoundScreen> {
                     },
                   ),
                   IconButton(
-                    icon: Icon(Icons.stop),
+
+                    icon: const Icon(Icons.stop),
+
                     color: Colors.redAccent,
                     onPressed: _stop,
                   ),
                 ],
               ),
+
               decoration: BoxDecoration(
                 boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
               ),
+
             ),
           CustomBottomNavBar(
             currentIndex: 2,

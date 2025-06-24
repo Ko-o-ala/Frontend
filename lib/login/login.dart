@@ -41,7 +41,10 @@ class _LoginScreenState extends State<LoginScreen> {
     idController.dispose();
     passwordController.dispose();
     _tapRecognizer.dispose();
+
+
     _sub?.cancel();
+
     super.dispose();
   }
 
@@ -78,19 +81,16 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _loginWithKakao() async {
-    final uri = Uri.parse(
-      'https://kauth.kakao.com/oauth/authorize'
-      '?client_id=210093e20b9250b8187c91a8863de561'
-      '&redirect_uri=myapp://oauth'
-      '&response_type=code',
-    );
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      print('카카오 로그인 URL 실행 실패');
-    }
-  }
+
+    final response = await http.post(
+      Uri.parse('https://kooala.tassoo.uk/users/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'userID': idController.text.trim(),
+        'password': passwordController.text.trim(),
+      }),
+
+
 
   Future<void> _handleIncomingUri(Uri? uri) async {
     if (uri == null) return;

@@ -41,7 +41,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.0.67:8000/users/signup'),
+        Uri.parse('https://kooala.tassoo.uk/users/signup'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'userID': idController.text.trim(),
@@ -56,7 +56,7 @@ class _SignInScreenState extends State<SignInScreen> {
         final decoded = json.decode(response.body);
         final username = decoded['data']['name'];
         await storage.write(key: 'username', value: username);
-        // 회원가입 성공 → 로그인 페이지로 이동
+
         if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/login');
       } else {

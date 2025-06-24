@@ -1,10 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:my_app/TopNav.dart';
+import 'package:my_app/bottomNavigationBar.dart';
 
-class MonthlySleepScreen extends StatelessWidget {
-  MonthlySleepScreen({super.key});
+class MonthlySleepScreen extends StatefulWidget {
+  const MonthlySleepScreen({super.key});
 
-  // 예시 데이터 (수면 시간 + 점수)
+  @override
+  State<MonthlySleepScreen> createState() => _MonthlySleepScreenState();
+}
+
+class _MonthlySleepScreenState extends State<MonthlySleepScreen> {
+  final storage = FlutterSecureStorage();
+  String username = '사용자';
+  bool _isLoggedIn = true;
+
   final Map<DateTime, Map<String, dynamic>> sleepData = {
     DateTime(2025, 5, 13): {'time': '6시간', 'score': 80},
     DateTime(2025, 5, 15): {'time': '7시간', 'score': 92},
@@ -12,85 +22,112 @@ class MonthlySleepScreen extends StatelessWidget {
   };
 
   @override
+  void initState() {
+    super.initState();
+    _loadUsername();
+  }
+
+  Future<void> _loadUsername() async {
+    final name = await storage.read(key: 'username');
+    setState(() {
+      username = name ?? '사용자';
+      _isLoggedIn = name != null;
+    });
+  }
+
+  Future<void> _handleLogout() async {
+    await storage.delete(key: 'username');
+    setState(() {
+      username = '사용자';
+      _isLoggedIn = false;
+    });
+    Navigator.pushReplacementNamed(context, '/login');
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final now = DateTime(2025, 5); // 2025년 5월
+    final now = DateTime(2025, 5);
     final daysInMonth = DateUtils.getDaysInMonth(now.year, now.month);
     final startWeekday = DateTime(now.year, now.month, 1).weekday;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('총 수면 시간'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
+      appBar: TopNav(
+        isLoggedIn: _isLoggedIn,
+        onLogin: () => Navigator.pushNamed(context, '/login'),
+        onLogout: _handleLogout,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 탭
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildTab('Days', false),
-                const Text('|', style: TextStyle(color: Colors.grey)),
-                _buildTab('Weeks', false),
-                _buildTab('Months', true),
-              ],
-            ),
-            const SizedBox(height: 16),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          child: ListView(
+            children: [
+              Text(
+                username,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Good Morning',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
 
-            // 달력
-            _buildCalendar(now, daysInMonth, startWeekday),
+              // 탭
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildTab(context, 'Days', false),
+                  const SizedBox(width: 8),
+                  _buildTab(context, 'Weeks', false),
+                  const SizedBox(width: 8),
+                  _buildTab(context, 'Months', true),
+                ],
+              ),
+              const SizedBox(height: 16),
 
-            const SizedBox(height: 20),
+              // 달력
+              _buildCalendar(now, daysInMonth, startWeekday),
+              const SizedBox(height: 20),
 
-            // 설명 텍스트
-            const Text(
-              'OO님은 5월에 ...',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'OO님은 5월에 평균 6시간 12분을 주무셨어요.\n목표보다 아쉽지만, 점점 안정적인 패턴을 찾아가고 있어요!',
-            ),
-          ],
+              // 설명 텍스트
+              Text(
+                '$username님은 5월에 ...',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '평균 6시간 12분을 주무셨어요.\n목표보다 아쉽지만, 점점 안정적인 패턴을 찾아가고 있어요!',
+              ),
+            ],
+          ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: CustomBottomNavBar(
         currentIndex: 2,
-        type: BottomNavigationBarType.fixed,
         onTap: (index) {
-          if (index == 0) Navigator.pushNamed(context, '/home');
-          if (index == 1) Navigator.pushNamed(context, '/sleep');
-          if (index == 2) {} // 현재 페이지
-          if (index == 3) Navigator.pushNamed(context, '/setting');
+          if (index == 0) Navigator.pushReplacementNamed(context, '/real-home');
+          if (index == 1) Navigator.pushReplacementNamed(context, '/sleep');
+          if (index == 3) Navigator.pushReplacementNamed(context, '/setting');
         },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
-            label: 'sleep',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.nights_stay),
-            label: 'Discover',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'setting'),
-        ],
       ),
     );
   }
 
-  Widget _buildTab(String label, bool selected) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+  Widget _buildTab(BuildContext context, String label, bool selected) {
+    return GestureDetector(
+      onTap: () {
+        if (label == 'Days') Navigator.pushReplacementNamed(context, '/sleep');
+        if (label == 'Weeks')
+          Navigator.pushReplacementNamed(context, '/weekly');
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF5890FF) : Colors.grey[200],
+          color: selected ? const Color(0xFF8183D9) : Colors.grey[200],
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -106,7 +143,7 @@ class MonthlySleepScreen extends StatelessWidget {
 
   Widget _buildCalendar(DateTime month, int days, int startWeekday) {
     List<Widget> rows = [];
-    int day = 1 - (startWeekday - 1); // 달력 시작일 조정
+    int day = 1 - (startWeekday - 1);
 
     while (day <= days) {
       List<Widget> week = [];

@@ -48,7 +48,10 @@ class HomePage extends StatelessWidget {
               onPressed: () {
                 Navigator.pushNamed(context, '/sound');
               },
-              child: const Text('수면 사운드 추천으로 가기'),
+              child: const Text('사운드 페이지 가기'),
+              ),
+
+
             ),
           ],
         ),
