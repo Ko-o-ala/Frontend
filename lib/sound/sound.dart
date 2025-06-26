@@ -412,7 +412,7 @@ class _SoundScreenState extends State<SoundScreen> {
               ),
             ),
           CustomBottomNavBar(
-            currentIndex: 1,
+            currentIndex: 2,
             onTap: (index) {
               if (index == 0) {
                 Navigator.pushReplacementNamed(context, '/real-home');

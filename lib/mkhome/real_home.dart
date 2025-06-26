@@ -213,7 +213,7 @@ class _RealHomeScreenState extends State<RealHomeScreen>
         ),
       ),
       bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 1,
+        currentIndex: 0,
         onTap: (index) {
           if (index == 0) {
             Navigator.pushReplacementNamed(context, '/real-home');
