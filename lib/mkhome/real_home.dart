@@ -213,12 +213,15 @@ class _RealHomeScreenState extends State<RealHomeScreen>
         ),
       ),
       bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _currentIndex,
+        currentIndex: 1,
         onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-          // 탭에 따른 추가 로직이 필요하면 여기에 구현
+          if (index == 0) {
+            Navigator.pushReplacementNamed(context, '/real-home');
+          } else if (index == 2) {
+            Navigator.pushReplacementNamed(context, '/sound');
+          } else if (index == 3) {
+            Navigator.pushReplacementNamed(context, '/setting');
+          }
         },
       ),
     );

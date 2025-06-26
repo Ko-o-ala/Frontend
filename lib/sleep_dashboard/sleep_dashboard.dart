@@ -200,9 +200,12 @@ class _SleepDashboardState extends State<SleepDashboard> {
               ),
               const SizedBox(height: 16),
               const Divider(),
-              const ListTile(
+              ListTile(
                 title: Text('수면 사운드 추천받기'),
                 trailing: Icon(Icons.arrow_forward_ios),
+                onTap: () {
+                  Navigator.pushNamed(context, '/sound');
+                },
               ),
               const ListTile(
                 title: Text('수면 조언 받으러 가기'),

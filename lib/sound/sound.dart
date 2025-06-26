@@ -412,12 +412,15 @@ class _SoundScreenState extends State<SoundScreen> {
               ),
             ),
           CustomBottomNavBar(
-            currentIndex: 2,
-            onTap: (idx) {
-              if (idx == 1)
-                Navigator.pushReplacementNamed(context, '/dashboard');
-              else if (idx == 3)
+            currentIndex: 1,
+            onTap: (index) {
+              if (index == 0) {
+                Navigator.pushReplacementNamed(context, '/real-home');
+              } else if (index == 2) {
+                Navigator.pushReplacementNamed(context, '/sound');
+              } else if (index == 3) {
                 Navigator.pushReplacementNamed(context, '/setting');
+              }
             },
           ),
         ],
