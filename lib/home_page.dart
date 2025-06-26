@@ -1,79 +1,134 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/sleep_dashboard/sleep_chart_screen.dart';
 import 'package:my_app/sleep_dashboard/sleep_entry.dart';
 import 'package:health/health.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<SleepEntry> entries = [];
+  bool loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchSleepData();
+  }
+
+  Future<void> fetchSleepData() async {
+    final health = Health();
+    final types = [
+      HealthDataType.SLEEP_ASLEEP,
+      HealthDataType.SLEEP_REM,
+      HealthDataType.SLEEP_DEEP,
+      HealthDataType.SLEEP_AWAKE,
+      HealthDataType.SLEEP_LIGHT,
+    ];
+    final permissions = List.filled(types.length, HealthDataAccess.READ);
+
+    final start = DateTime(2025, 4, 6, 18);
+    final end = DateTime(2025, 4, 7, 12);
+
+    final authorized = await health.requestAuthorization(
+      types,
+      permissions: permissions,
+    );
+    if (!authorized) {
+      print('❌ 건강 앱 접근 거부됨');
+      return;
+    }
+
+    try {
+      final rawData = await health.getHealthDataFromTypes(
+        startTime: start,
+        endTime: end,
+        types: types,
+      );
+
+      final result =
+          rawData
+              .map(
+                (d) =>
+                    SleepEntry(start: d.dateFrom, end: d.dateTo, type: d.type),
+              )
+              .toList();
+
+      setState(() {
+        entries = result;
+        loading = false;
+      });
+    } catch (e) {
+      print('⚠️ 오류 발생: $e');
+      setState(() => loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('홈')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('여기는 홈 페이지입니다!', style: TextStyle(fontSize: 20)),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/sleep');
-              },
-              child: const Text('수면 대시보드로 이동'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/login');
-              },
-              child: const Text('로그인으로 가기'),
-            ),
-
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/sign-in');
-              },
-              child: const Text('회원가입으로 가기'),
-            ),
-
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/real-home');
-              },
-              child: const Text('찐 홈으로 가기'),
-            ),
-
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/sound');
-              },
-              child: const Text('사운드 페이지 가기'),
-            ),
-
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                // 여기서 객체를 만든다!
-                final sleepEntry = SleepEntry(
-                  start: DateTime(2025, 5, 17, 23, 0),
-                  end: DateTime(2025, 5, 18, 7, 0),
-                  type: HealthDataType.SLEEP_ASLEEP,
-                );
-
-                Navigator.pushNamed(
-                  context,
-                  '/sleep-entry',
-                  arguments: sleepEntry,
-                );
-              },
-              child: const Text('수면 데이터 페이지'),
-            ),
-          ],
-        ),
-      ),
+      body:
+          loading
+              ? const Center(child: CircularProgressIndicator())
+              : Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/login');
+                      },
+                      child: const Text('로그인 화면 가기'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/sleep');
+                      },
+                      child: const Text('수면 대시보드 가기'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/time-set');
+                      },
+                      child: const Text('수면 목표 설정 가기'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/sound');
+                      },
+                      child: const Text('사운드 화면 가기'),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (entries.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('수면 데이터가 없습니다.')),
+                          );
+                          return;
+                        }
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => SleepChartScreen(
+                                  entries: entries,
+                                  selectedDate: DateTime(2025, 4, 6),
+                                ),
+                          ),
+                        );
+                      },
+                      child: const Text('수면 차트 보기'),
+                    ),
+                  ],
+                ),
+              ),
     );
   }
 }

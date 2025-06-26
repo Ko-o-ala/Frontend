@@ -4,10 +4,10 @@ import 'package:my_app/sleep_dashboard/sleep_entry_screen.dart';
 import 'package:my_app/sleep_time/sleep_goal_screen.dart';
 import 'package:my_app/sound/sound.dart';
 import 'package:my_app/sleep_dashboard/sleep_entry.dart';
-
-import 'package:provider/provider.dart'; // ✅ provider 추가
+import 'package:provider/provider.dart';
 import 'package:my_app/login/login.dart';
 import 'package:my_app/signin/signin.dart';
+import 'package:my_app/sleep_dashboard/sleep_chart_screen.dart';
 
 import 'home_page.dart';
 import 'sleep_dashboard/sleep_dashboard.dart';
@@ -20,7 +20,7 @@ import 'package:my_app/mkhome/setting_page.dart';
 import 'package:my_app/connect_settings/notification.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:my_app/device/alarm/alarm_model.dart';
-import 'package:my_app/device/alarm/alarm_provider.dart'; // ✅ AlarmProvider 추가
+import 'package:my_app/device/alarm/alarm_provider.dart';
 import 'package:my_app/device/alarm/alarm_dashboard_page.dart';
 import 'package:my_app/device/alarm/bedtime_provider.dart';
 
@@ -56,29 +56,70 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Sleep App',
       debugShowCheckedModeBanner: false,
-      routes: {
-        '/': (context) => const opening(),
-        '/survey': (context) => const SleepSurveyHome(),
-        '/setup': (context) => const SleepRoutineSetupPage(),
-        '/home': (context) => const HomePage(),
-        '/sleep': (context) => const SleepDashboard(),
-        '/weekly': (context) => const WeeklySleepScreen(),
-        '/monthly': (context) => MonthlySleepScreen(),
+      initialRoute: '/',
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
+          case '/':
+            return MaterialPageRoute(builder: (_) => const opening());
+          case '/survey':
+            return MaterialPageRoute(builder: (_) => const SleepSurveyHome());
+          case '/setup':
+            return MaterialPageRoute(
+              builder: (_) => const SleepRoutineSetupPage(),
+            );
+          case '/home':
+            return MaterialPageRoute(builder: (_) => const HomePage());
+          case '/sleep':
+            return MaterialPageRoute(builder: (_) => const SleepDashboard());
+          case '/weekly':
+            return MaterialPageRoute(builder: (_) => const WeeklySleepScreen());
+          case '/monthly':
+            return MaterialPageRoute(builder: (_) => MonthlySleepScreen());
+          case '/setting':
+            return MaterialPageRoute(builder: (_) => const SettingsScreen());
+          case '/notice':
+            return MaterialPageRoute(builder: (_) => const Notice());
+          case '/alarm':
+            return MaterialPageRoute(
+              builder: (_) => const AlarmDashboardPage(),
+            );
+          case '/login':
+            return MaterialPageRoute(builder: (_) => LoginScreen());
+          case '/sign-in':
+            return MaterialPageRoute(builder: (_) => const SignInScreen());
+          case '/time-set':
+            return MaterialPageRoute(builder: (_) => SleepGoalScreen());
+          case '/real-home':
+            return MaterialPageRoute(builder: (_) => RealHomeScreen());
+          case '/sound':
+            return MaterialPageRoute(builder: (_) => SoundScreen());
 
-        '/setting': (context) => const SettingsScreen(),
-        '/notice': (context) => const Notice(),
-        '/alarm': (context) => const AlarmDashboardPage(),
+          case '/sleep-entry':
+            final entry = settings.arguments as SleepEntry;
+            return MaterialPageRoute(
+              builder: (_) => SleepEntryScreen(entry: entry),
+            );
 
-        '/login': (context) => LoginScreen(),
-        '/sign-in': (context) => const SignInScreen(),
-        '/time-set': (context) => SleepGoalScreen(),
-        '/real-home': (context) => RealHomeScreen(),
-        '/sound': (context) => SoundScreen(),
-        '/sleep-entry': (context) {
-          final entry =
-              ModalRoute.of(context)!.settings.arguments as SleepEntry;
-          return SleepEntryScreen(entry: entry);
-        },
+          case '/sleep-chart':
+            final args = settings.arguments as Map<String, dynamic>;
+            final entries = args['entries'] as List<SleepEntry>;
+            final selectedDate = args['selectedDate'] as DateTime;
+            return MaterialPageRoute(
+              builder:
+                  (_) => SleepChartScreen(
+                    entries: entries,
+                    selectedDate: selectedDate,
+                  ),
+            );
+
+          default:
+            return MaterialPageRoute(
+              builder:
+                  (_) => const Scaffold(
+                    body: Center(child: Text('404 - 페이지를 찾을 수 없습니다')),
+                  ),
+            );
+        }
       },
     );
   }

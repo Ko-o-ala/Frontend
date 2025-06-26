@@ -18,6 +18,8 @@ class SleepEntry {
         return '깊은 수면';
       case HealthDataType.SLEEP_REM:
         return 'REM 수면';
+      case HealthDataType.SLEEP_LIGHT:
+        return '코어 수면';
       case HealthDataType.SLEEP_AWAKE:
         return '깨어있음';
       default:
@@ -34,6 +36,7 @@ class SleepDataFetcher {
     HealthDataType.SLEEP_ASLEEP,
     HealthDataType.SLEEP_DEEP,
     HealthDataType.SLEEP_REM,
+    HealthDataType.SLEEP_LIGHT,
     HealthDataType.SLEEP_AWAKE,
   ];
 
