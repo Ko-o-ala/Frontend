@@ -328,7 +328,7 @@ class _SoundScreenState extends State<SoundScreen> {
                                         .split(',')
                                         .map(
                                           (tag) => Chip(
-                                            label: Text(tag.trim()),
+                                            label: Text('#${tag.trim()}'),
                                             backgroundColor: const Color(
                                               0xFFF0F0F0,
                                             ),
