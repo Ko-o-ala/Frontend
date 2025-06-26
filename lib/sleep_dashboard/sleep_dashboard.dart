@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:my_app/sleep_dashboard/monthly_sleep_screen.dart';
-import 'package:my_app/sleep_dashboard/weekly_sleep_screen.dart';
+import 'package:health/health.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:my_app/bottomNavigationBar.dart';
-import 'package:my_app/TopNav.dart'; // ← TopNav 추가
+import 'package:my_app/TopNav.dart';
+import 'package:my_app/sleep_dashboard/monthly_sleep_screen.dart';
+import 'package:my_app/sleep_dashboard/weekly_sleep_screen.dart';
 
 final storage = FlutterSecureStorage();
 
@@ -18,23 +19,16 @@ class SleepDashboard extends StatefulWidget {
 }
 
 class _SleepDashboardState extends State<SleepDashboard> {
-  String formattedDuration = '시간 미정';
+  String formattedDuration = '불러오는 중...';
   String username = '사용자';
-  bool _isLoggedIn = false; // 로그인 상태
+  bool _isLoggedIn = false;
+  Duration? todaySleep;
 
   @override
   void initState() {
     super.initState();
     _loadUsername();
-
-    if (widget.goalSleepDuration != null) {
-      final hours = widget.goalSleepDuration!.inHours;
-      final minutes = widget.goalSleepDuration!.inMinutes % 60;
-      formattedDuration = '${hours}시간 ${minutes}분';
-      print('✅ 전달받은 수면 시간: $formattedDuration');
-    } else {
-      print('⚠️ 전달된 수면 시간 없음');
-    }
+    _fetchTodaySleep();
   }
 
   Future<void> _loadUsername() async {
@@ -53,8 +47,52 @@ class _SleepDashboardState extends State<SleepDashboard> {
     });
   }
 
+  Future<void> _fetchTodaySleep() async {
+    final health = Health();
+    final types = [HealthDataType.SLEEP_ASLEEP];
+    final permissions = [HealthDataAccess.READ];
+
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day);
+    final end = start.add(const Duration(days: 1));
+
+    final authorized = await health.requestAuthorization(
+      types,
+      permissions: permissions,
+    );
+    if (!authorized) {
+      setState(() => formattedDuration = '❌ 건강 앱 접근 거부됨');
+      return;
+    }
+
+    try {
+      final data = await health.getHealthDataFromTypes(
+        types: types,
+        startTime: start,
+        endTime: end,
+      );
+      final totalSeconds = data.fold(
+        0.0,
+        (sum, d) => sum + (d.value as double),
+      );
+      final duration = Duration(seconds: totalSeconds.toInt());
+
+      setState(() {
+        todaySleep = duration;
+        formattedDuration = '${duration.inHours}시간 ${duration.inMinutes % 60}분';
+      });
+    } catch (e) {
+      setState(() => formattedDuration = '⚠️ 오류 발생');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final goalText =
+        widget.goalSleepDuration != null
+            ? '${widget.goalSleepDuration!.inHours}시간 ${widget.goalSleepDuration!.inMinutes % 60}분'
+            : '미설정';
+
     return Scaffold(
       appBar: TopNav(
         isLoggedIn: _isLoggedIn,
@@ -111,11 +149,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
                         text: formattedDuration,
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      const TextSpan(text: ' that is above your '),
-                      const TextSpan(
-                        text: 'recommendation',
-                        style: TextStyle(decoration: TextDecoration.underline),
-                      ),
+                      const TextSpan(text: ' today.'),
                     ],
                   ),
                   style: const TextStyle(color: Colors.white),
@@ -127,15 +161,15 @@ class _SleepDashboardState extends State<SleepDashboard> {
                   Expanded(
                     child: _InfoItem(
                       icon: Icons.nights_stay,
-                      time: '총 수면 시간',
-                      label: '총 수면 시간',
+                      time: formattedDuration,
+                      label: '오늘 총 수면 시간',
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: _InfoItem(
                       icon: Icons.access_time,
-                      time: formattedDuration,
+                      time: goalText,
                       label: '목표 수면 시간',
                     ),
                   ),
@@ -155,8 +189,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
                         context,
                         MaterialPageRoute(
                           builder:
-                              (context) =>
-                                  SleepDashboard(goalSleepDuration: result),
+                              (_) => SleepDashboard(goalSleepDuration: result),
                         ),
                       );
                     }
@@ -201,8 +234,8 @@ class _SleepDashboardState extends State<SleepDashboard> {
               const SizedBox(height: 16),
               const Divider(),
               ListTile(
-                title: Text('수면 사운드 추천받기'),
-                trailing: Icon(Icons.arrow_forward_ios),
+                title: const Text('수면 사운드 추천받기'),
+                trailing: const Icon(Icons.arrow_forward_ios),
                 onTap: () {
                   Navigator.pushNamed(context, '/sound');
                 },
@@ -243,7 +276,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
             context,
             MaterialPageRoute(builder: (_) => MonthlySleepScreen()),
           );
-        } else if (label == 'Days') {
+        } else {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => SleepDashboard()),
