@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/mkhome/real_home.dart';
+import 'package:my_app/sleep_dashboard/sleep_entry_screen.dart';
 import 'package:my_app/sleep_time/sleep_goal_screen.dart';
 import 'package:my_app/sound/sound.dart';
+import 'package:my_app/sleep_dashboard/sleep_entry.dart';
 
 import 'package:provider/provider.dart'; // ✅ provider 추가
 import 'package:my_app/login/login.dart';
@@ -72,6 +74,11 @@ class MyApp extends StatelessWidget {
         '/time-set': (context) => SleepGoalScreen(),
         '/real-home': (context) => RealHomeScreen(),
         '/sound': (context) => SoundScreen(),
+        '/sleep-entry': (context) {
+          final entry =
+              ModalRoute.of(context)!.settings.arguments as SleepEntry;
+          return SleepEntryScreen(entry: entry);
+        },
       },
     );
   }

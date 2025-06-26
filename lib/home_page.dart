@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/sleep_dashboard/sleep_entry.dart';
+import 'package:health/health.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -49,6 +51,25 @@ class HomePage extends StatelessWidget {
                 Navigator.pushNamed(context, '/sound');
               },
               child: const Text('사운드 페이지 가기'),
+            ),
+
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                // 여기서 객체를 만든다!
+                final sleepEntry = SleepEntry(
+                  start: DateTime(2025, 5, 17, 23, 0),
+                  end: DateTime(2025, 5, 18, 7, 0),
+                  type: HealthDataType.SLEEP_ASLEEP,
+                );
+
+                Navigator.pushNamed(
+                  context,
+                  '/sleep-entry',
+                  arguments: sleepEntry,
+                );
+              },
+              child: const Text('수면 데이터 페이지'),
             ),
           ],
         ),

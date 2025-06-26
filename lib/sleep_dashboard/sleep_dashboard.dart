@@ -49,37 +49,54 @@ class _SleepDashboardState extends State<SleepDashboard> {
 
   Future<void> _fetchTodaySleep() async {
     final health = Health();
-    final types = [HealthDataType.SLEEP_ASLEEP];
-    final permissions = [HealthDataAccess.READ];
+    final types = [
+      HealthDataType.SLEEP_ASLEEP,
+      HealthDataType.SLEEP_LIGHT,
+      HealthDataType.SLEEP_DEEP,
+      HealthDataType.SLEEP_REM,
+    ];
+    final permissions = List.filled(types.length, HealthDataAccess.READ);
 
     final now = DateTime.now();
-    final start = DateTime(now.year, now.month, now.day);
-    final end = start.add(const Duration(days: 1));
+    final start = DateTime(2025, 4, 6, 18); // 6일 오후 6시
+    final end = DateTime(2025, 4, 7, 12); // 7일 정오
+
+    print('요청범위: $start ~ $end');
 
     final authorized = await health.requestAuthorization(
       types,
       permissions: permissions,
     );
+    print('📌 authorize result: $authorized');
     if (!authorized) {
       setState(() => formattedDuration = '❌ 건강 앱 접근 거부됨');
       return;
     }
 
     try {
+      print('수면 데이터 요청: $start ~ $end');
       final data = await health.getHealthDataFromTypes(
         types: types,
         startTime: start,
         endTime: end,
       );
-      final totalSeconds = data.fold(
-        0.0,
-        (sum, d) => sum + (d.value as double),
-      );
-      final duration = Duration(seconds: totalSeconds.toInt());
+
+      print('가져온 수면 데이터: ${data.length}');
+      for (var d in data) {
+        print('${d.type} | ${d.dateFrom} ~ ${d.dateTo} | ${d.value}');
+      }
+
+      final totalDuration = data
+          .where((d) => types.contains(d.type))
+          .fold(
+            Duration.zero,
+            (sum, d) => sum + d.dateTo.difference(d.dateFrom),
+          );
 
       setState(() {
-        todaySleep = duration;
-        formattedDuration = '${duration.inHours}시간 ${duration.inMinutes % 60}분';
+        todaySleep = totalDuration;
+        formattedDuration =
+            '${totalDuration.inHours}시간 ${totalDuration.inMinutes % 60}분';
       });
     } catch (e) {
       setState(() => formattedDuration = '⚠️ 오류 발생');
