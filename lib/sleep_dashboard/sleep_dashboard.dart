@@ -6,6 +6,7 @@ import 'package:my_app/bottomNavigationBar.dart';
 import 'package:my_app/TopNav.dart';
 import 'package:my_app/sleep_dashboard/monthly_sleep_screen.dart';
 import 'package:my_app/sleep_dashboard/weekly_sleep_screen.dart';
+import 'package:my_app/sleep_dashboard/sleep_entry.dart';
 
 final storage = FlutterSecureStorage();
 
@@ -23,6 +24,8 @@ class _SleepDashboardState extends State<SleepDashboard> {
   String username = '사용자';
   bool _isLoggedIn = false;
   Duration? todaySleep;
+  List<SleepEntry> entries = [];
+  bool loading = true;
 
   @override
   void initState() {
@@ -51,15 +54,20 @@ class _SleepDashboardState extends State<SleepDashboard> {
     final health = Health();
     final types = [
       HealthDataType.SLEEP_ASLEEP,
-      HealthDataType.SLEEP_LIGHT,
-      HealthDataType.SLEEP_DEEP,
       HealthDataType.SLEEP_REM,
+      HealthDataType.SLEEP_DEEP,
+      HealthDataType.SLEEP_AWAKE,
+      HealthDataType.SLEEP_LIGHT,
     ];
     final permissions = List.filled(types.length, HealthDataAccess.READ);
 
     final now = DateTime.now();
-    final start = DateTime(2025, 4, 6, 18); // 6일 오후 6시
-    final end = DateTime(2025, 4, 7, 12); // 7일 정오
+    final start = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(const Duration(hours: 6));
+    final end = DateTime(now.year, now.month, now.day, 12);
 
     print('요청범위: $start ~ $end');
 
@@ -67,39 +75,41 @@ class _SleepDashboardState extends State<SleepDashboard> {
       types,
       permissions: permissions,
     );
-    print('📌 authorize result: $authorized');
     if (!authorized) {
-      setState(() => formattedDuration = '❌ 건강 앱 접근 거부됨');
+      print('❌ 건강 앱 접근 거부됨');
+      setState(() => loading = false);
       return;
     }
 
     try {
-      print('수면 데이터 요청: $start ~ $end');
-      final data = await health.getHealthDataFromTypes(
-        types: types,
+      final rawData = await health.getHealthDataFromTypes(
         startTime: start,
         endTime: end,
+        types: types,
       );
 
-      print('가져온 수면 데이터: ${data.length}');
-      for (var d in data) {
-        print('${d.type} | ${d.dateFrom} ~ ${d.dateTo} | ${d.value}');
-      }
+      entries =
+          rawData
+              .map(
+                (d) =>
+                    SleepEntry(start: d.dateFrom, end: d.dateTo, type: d.type),
+              )
+              .toList();
 
-      final totalDuration = data
-          .where((d) => types.contains(d.type))
-          .fold(
-            Duration.zero,
-            (sum, d) => sum + d.dateTo.difference(d.dateFrom),
-          );
+      todaySleep = entries.fold<Duration>(
+        Duration.zero,
+        (prev, e) => prev + e.duration,
+      );
+
+      formattedDuration =
+          '${todaySleep!.inHours}시간 ${todaySleep!.inMinutes % 60}분';
 
       setState(() {
-        todaySleep = totalDuration;
-        formattedDuration =
-            '${totalDuration.inHours}시간 ${totalDuration.inMinutes % 60}분';
+        loading = false;
       });
     } catch (e) {
-      setState(() => formattedDuration = '⚠️ 오류 발생');
+      print('⚠️ 오류 발생: $e');
+      setState(() => loading = false);
     }
   }
 
@@ -113,157 +123,192 @@ class _SleepDashboardState extends State<SleepDashboard> {
     return Scaffold(
       appBar: TopNav(
         isLoggedIn: _isLoggedIn,
-        onLogin: () {
-          Navigator.pushNamed(context, '/login');
-        },
+        onLogin: () => Navigator.pushNamed(context, '/login'),
         onLogout: _handleLogout,
       ),
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                username,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Good Morning',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildTab(context, 'Days', true),
-                  _buildTab(context, 'Weeks', false),
-                  _buildTab(context, 'Months', false),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF2C2C72), Color(0xFF1F1F4C)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+        child:
+            loading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 20,
                   ),
-                ),
-                child: Text.rich(
-                  TextSpan(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const TextSpan(text: 'You have slept '),
-                      TextSpan(
-                        text: formattedDuration,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      // 사용자 인사 영역
+                      Text(
+                        username,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
-                      const TextSpan(text: ' today.'),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Good Morning',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // 탭
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildTab(context, 'Days', true),
+                          _buildTab(context, 'Weeks', false),
+                          _buildTab(context, 'Months', false),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // 오늘 수면 정보 요약 카드
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF2C2C72), Color(0xFF1F1F4C)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              const TextSpan(text: 'You have slept '),
+                              TextSpan(
+                                text: formattedDuration,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const TextSpan(text: ' today.'),
+                            ],
+                          ),
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // 상세 정보 카드
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _InfoItem(
+                              icon: Icons.nights_stay,
+                              time: formattedDuration,
+                              label: '오늘 총 수면 시간',
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _InfoItem(
+                              icon: Icons.access_time,
+                              time: goalText,
+                              label: '목표 수면 시간',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 목표 수정 버튼
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final result = await Navigator.pushNamed(
+                              context,
+                              '/time-set',
+                            );
+                            if (result is Duration) {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (_) => SleepDashboard(
+                                        goalSleepDuration: result,
+                                      ),
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            backgroundColor: const Color(0xFF8183D9),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text('목표 수면시간 수정하기  +'),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // 수면 점수 영역
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '오늘 $username님의 수면점수는..',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const Text('수면점수 더 알아보기 >'),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Center(
+                        child: CircularPercentIndicator(
+                          radius: 80.0,
+                          lineWidth: 14.0,
+                          percent:
+                              todaySleep != null &&
+                                      widget.goalSleepDuration != null
+                                  ? (todaySleep!.inMinutes /
+                                          widget.goalSleepDuration!.inMinutes)
+                                      .clamp(0, 1)
+                                  : 0.0,
+                          center: Text(
+                            todaySleep != null &&
+                                    widget.goalSleepDuration != null
+                                ? '${((todaySleep!.inMinutes / widget.goalSleepDuration!.inMinutes) * 100).round()}점'
+                                : "–",
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          progressColor: const Color(0xFFF6D35F),
+                          backgroundColor: Colors.black,
+                          circularStrokeCap: CircularStrokeCap.round,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Divider(),
+
+                      // 메뉴 리스트
+                      ListTile(
+                        title: const Text('수면 사운드 추천받기'),
+                        trailing: const Icon(Icons.arrow_forward_ios),
+                        onTap: () => Navigator.pushNamed(context, '/sound'),
+                      ),
+                      const ListTile(
+                        title: Text('수면 조언 받으러 가기'),
+                        trailing: Icon(Icons.arrow_forward_ios),
+                      ),
+
+                      const SizedBox(height: 100), // 여유 공간 확보
                     ],
                   ),
-                  style: const TextStyle(color: Colors.white),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: _InfoItem(
-                      icon: Icons.nights_stay,
-                      time: formattedDuration,
-                      label: '오늘 총 수면 시간',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _InfoItem(
-                      icon: Icons.access_time,
-                      time: goalText,
-                      label: '목표 수면 시간',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final result = await Navigator.pushNamed(
-                      context,
-                      '/time-set',
-                    );
-                    if (result is Duration) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (_) => SleepDashboard(goalSleepDuration: result),
-                        ),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: const Color(0xFF8183D9),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('목표 수면시간 수정하기  +'),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '오늘 $username님의 수면점수는..',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const Text('수면점수 더 알아보기 >'),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Center(
-                child: CircularPercentIndicator(
-                  radius: 80.0,
-                  lineWidth: 14.0,
-                  percent: 0.7,
-                  center: const Text(
-                    "70점",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  progressColor: const Color(0xFFF6D35F),
-                  backgroundColor: Colors.black,
-                  circularStrokeCap: CircularStrokeCap.round,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Divider(),
-              ListTile(
-                title: const Text('수면 사운드 추천받기'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () {
-                  Navigator.pushNamed(context, '/sound');
-                },
-              ),
-              const ListTile(
-                title: Text('수면 조언 받으러 가기'),
-                trailing: Icon(Icons.arrow_forward_ios),
-              ),
-            ],
-          ),
-        ),
       ),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: 1,

@@ -21,7 +21,12 @@ class SleepChartScreen extends StatelessWidget {
       (prev, e) => prev + e.duration,
     );
 
-    final baseTime = DateTime(2025, 4, 6, 18);
+    final now = DateTime.now();
+    final baseTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(const Duration(hours: 6));
 
     return Scaffold(
       appBar: AppBar(title: const Text('수면 단계')),

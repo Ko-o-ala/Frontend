@@ -1,4 +1,5 @@
 import 'package:health/health.dart';
+import 'dart:convert';
 
 /// 수면 데이터를 나타내는 클래스
 class SleepEntry {
@@ -40,7 +41,6 @@ class SleepDataFetcher {
     HealthDataType.SLEEP_AWAKE,
   ];
 
-  /// 지정한 날짜의 수면 데이터를 가져옴 (예: 2025년 5월 17일)
   Future<List<SleepEntry>> fetchSleepDataForDate(DateTime date) async {
     final permissions = sleepTypes.map((_) => HealthDataAccess.READ).toList();
 
@@ -53,10 +53,14 @@ class SleepDataFetcher {
       throw Exception('❌ 건강 데이터 접근 권한이 거부되었습니다.');
     }
 
-    final startTime = DateTime(date.year, date.month, date.day, 0, 0, 0);
-    final endTime = startTime
-        .add(const Duration(days: 1))
-        .subtract(const Duration(seconds: 1));
+    final now = DateTime.now();
+
+    final startTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(const Duration(hours: 6)); // 전날 18시
+    final endTime = DateTime(now.year, now.month, now.day, 12); // 오늘 12시
 
     final rawData = await _health.getHealthDataFromTypes(
       types: sleepTypes,
@@ -65,6 +69,20 @@ class SleepDataFetcher {
     );
 
     final cleanData = _health.removeDuplicates(rawData);
+
+    final jsonList =
+        cleanData
+            .map(
+              (e) => {
+                'type': e.type.toString(),
+                'dateFrom': e.dateFrom.toIso8601String(),
+                'dateTo': e.dateTo.toIso8601String(),
+                'value': e.value,
+                'unit': e.unit.toString(),
+                'recordingMethod': e.recordingMethod.toString(),
+              },
+            )
+            .toList();
 
     return cleanData.map((e) {
       return SleepEntry(start: e.dateFrom, end: e.dateTo, type: e.type);

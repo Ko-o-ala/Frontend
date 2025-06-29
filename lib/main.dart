@@ -103,7 +103,9 @@ class MyApp extends StatelessWidget {
           case '/sleep-chart':
             final args = settings.arguments as Map<String, dynamic>;
             final entries = args['entries'] as List<SleepEntry>;
-            final selectedDate = args['selectedDate'] as DateTime;
+            final selectedDate = DateTime.now().subtract(
+              const Duration(hours: 6),
+            ); // ✅ 현재 기준 날짜로 계산
             return MaterialPageRoute(
               builder:
                   (_) => SleepChartScreen(

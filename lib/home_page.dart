@@ -31,8 +31,13 @@ class _HomePageState extends State<HomePage> {
     ];
     final permissions = List.filled(types.length, HealthDataAccess.READ);
 
-    final start = DateTime(2025, 4, 6, 18);
-    final end = DateTime(2025, 4, 7, 12);
+    final now = DateTime.now();
+    final start = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(const Duration(hours: 6));
+    final end = DateTime(now.year, now.month, now.day, 12);
 
     final authorized = await health.requestAuthorization(
       types,
@@ -119,7 +124,9 @@ class _HomePageState extends State<HomePage> {
                             builder:
                                 (context) => SleepChartScreen(
                                   entries: entries,
-                                  selectedDate: DateTime(2025, 4, 6),
+                                  selectedDate: DateTime.now().subtract(
+                                    const Duration(hours: 6),
+                                  ),
                                 ),
                           ),
                         );
