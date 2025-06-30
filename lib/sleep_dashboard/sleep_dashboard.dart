@@ -27,6 +27,8 @@ class _SleepDashboardState extends State<SleepDashboard> {
   List<SleepEntry> entries = [];
   bool loading = true;
 
+  int sleepScore = 0;
+
   @override
   void initState() {
     super.initState();
@@ -69,14 +71,11 @@ class _SleepDashboardState extends State<SleepDashboard> {
     ).subtract(const Duration(hours: 6));
     final end = DateTime(now.year, now.month, now.day, 12);
 
-    print('요청범위: $start ~ $end');
-
     final authorized = await health.requestAuthorization(
       types,
       permissions: permissions,
     );
     if (!authorized) {
-      print('❌ 건강 앱 접근 거부됨');
       setState(() => loading = false);
       return;
     }
@@ -98,17 +97,35 @@ class _SleepDashboardState extends State<SleepDashboard> {
 
       todaySleep = entries.fold<Duration>(
         Duration.zero,
-        (prev, e) => prev + e.duration,
+        (sum, e) => sum + e.duration,
       );
+
+      // 🧠 수면 구조 비율 계산
+      final totalMin = todaySleep!.inMinutes.toDouble();
+      double deepMin = 0, remMin = 0;
+      for (var e in entries) {
+        final m = e.duration.inMinutes.toDouble();
+        if (e.type == HealthDataType.SLEEP_DEEP) deepMin += m;
+        if (e.type == HealthDataType.SLEEP_REM) remMin += m;
+      }
+      final deepRatio = (totalMin > 0) ? (deepMin / totalMin) * 100 : 0;
+      final remRatio = (totalMin > 0) ? (remMin / totalMin) * 100 : 0;
+
+      // 🧮 점수 계산
+      final goalMin = widget.goalSleepDuration?.inMinutes ?? 480;
+      final percentAchieved = (totalMin / goalMin).clamp(0, 1);
+
+      int penalty = 0;
+      if (deepRatio < 20) penalty += 20;
+      if (remRatio < 25) penalty += 20;
+
+      sleepScore = ((percentAchieved * 100).toInt() - penalty).clamp(0, 100);
 
       formattedDuration =
           '${todaySleep!.inHours}시간 ${todaySleep!.inMinutes % 60}분';
 
-      setState(() {
-        loading = false;
-      });
+      setState(() => loading = false);
     } catch (e) {
-      print('⚠️ 오류 발생: $e');
       setState(() => loading = false);
     }
   }
@@ -127,11 +144,11 @@ class _SleepDashboardState extends State<SleepDashboard> {
         onLogout: _handleLogout,
       ),
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child:
-            loading
-                ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
+      body:
+          loading
+              ? const Center(child: CircularProgressIndicator())
+              : SafeArea(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 20,
@@ -139,7 +156,6 @@ class _SleepDashboardState extends State<SleepDashboard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 사용자 인사 영역
                       Text(
                         username,
                         style: const TextStyle(
@@ -157,7 +173,6 @@ class _SleepDashboardState extends State<SleepDashboard> {
                       ),
                       const SizedBox(height: 20),
 
-                      // 탭
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -168,7 +183,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
                       ),
                       const SizedBox(height: 20),
 
-                      // 오늘 수면 정보 요약 카드
+                      // 오늘 수면 요약
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
@@ -176,8 +191,6 @@ class _SleepDashboardState extends State<SleepDashboard> {
                           borderRadius: BorderRadius.circular(16),
                           gradient: const LinearGradient(
                             colors: [Color(0xFF2C2C72), Color(0xFF1F1F4C)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
                           ),
                         ),
                         child: Text.rich(
@@ -198,7 +211,6 @@ class _SleepDashboardState extends State<SleepDashboard> {
                       ),
                       const SizedBox(height: 20),
 
-                      // 상세 정보 카드
                       Row(
                         children: [
                           Expanded(
@@ -220,7 +232,28 @@ class _SleepDashboardState extends State<SleepDashboard> {
                       ),
                       const SizedBox(height: 16),
 
-                      // 목표 수정 버튼
+                      // 수면 점수 표시
+                      Center(
+                        child: CircularPercentIndicator(
+                          radius: 80,
+                          lineWidth: 14,
+                          percent: sleepScore / 100,
+                          center: Text(
+                            '$sleepScore점',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          progressColor: const Color(0xFFF6D35F),
+                          backgroundColor: Colors.black12,
+                          circularStrokeCap: CircularStrokeCap.round,
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Divider(),
+
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -243,6 +276,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
                           },
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
+                            foregroundColor: Colors.white,
                             backgroundColor: const Color(0xFF8183D9),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -251,50 +285,8 @@ class _SleepDashboardState extends State<SleepDashboard> {
                           child: const Text('목표 수면시간 수정하기  +'),
                         ),
                       ),
+
                       const SizedBox(height: 24),
-
-                      // 수면 점수 영역
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '오늘 $username님의 수면점수는..',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          const Text('수면점수 더 알아보기 >'),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Center(
-                        child: CircularPercentIndicator(
-                          radius: 80.0,
-                          lineWidth: 14.0,
-                          percent:
-                              todaySleep != null &&
-                                      widget.goalSleepDuration != null
-                                  ? (todaySleep!.inMinutes /
-                                          widget.goalSleepDuration!.inMinutes)
-                                      .clamp(0, 1)
-                                  : 0.0,
-                          center: Text(
-                            todaySleep != null &&
-                                    widget.goalSleepDuration != null
-                                ? '${((todaySleep!.inMinutes / widget.goalSleepDuration!.inMinutes) * 100).round()}점'
-                                : "–",
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          progressColor: const Color(0xFFF6D35F),
-                          backgroundColor: Colors.black,
-                          circularStrokeCap: CircularStrokeCap.round,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Divider(),
-
-                      // 메뉴 리스트
                       ListTile(
                         title: const Text('수면 사운드 추천받기'),
                         trailing: const Icon(Icons.arrow_forward_ios),
@@ -304,22 +296,17 @@ class _SleepDashboardState extends State<SleepDashboard> {
                         title: Text('수면 조언 받으러 가기'),
                         trailing: Icon(Icons.arrow_forward_ios),
                       ),
-
-                      const SizedBox(height: 100), // 여유 공간 확보
+                      const SizedBox(height: 100),
                     ],
                   ),
                 ),
-      ),
+              ),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: 1,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pushReplacementNamed(context, '/real-home');
-          } else if (index == 2) {
-            Navigator.pushReplacementNamed(context, '/sound');
-          } else if (index == 3) {
-            Navigator.pushReplacementNamed(context, '/setting');
-          }
+        onTap: (idx) {
+          if (idx == 0) Navigator.pushReplacementNamed(context, '/real-home');
+          if (idx == 2) Navigator.pushReplacementNamed(context, '/sound');
+          if (idx == 3) Navigator.pushReplacementNamed(context, '/setting');
         },
       ),
     );
