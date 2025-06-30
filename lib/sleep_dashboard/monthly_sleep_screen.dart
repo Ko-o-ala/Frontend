@@ -95,7 +95,7 @@ class _MonthlySleepScreenState extends State<MonthlySleepScreen> {
 
               // 설명 텍스트
               Text(
-                '$username님은 5월에 ...',
+                '$username님은 6월에 ...',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),

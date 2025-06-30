@@ -1,5 +1,6 @@
 import 'package:health/health.dart';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 
 /// 수면 데이터를 나타내는 클래스
 class SleepEntry {
@@ -70,6 +71,7 @@ class SleepDataFetcher {
 
     final cleanData = _health.removeDuplicates(rawData);
 
+    // JSON 형태로 변환
     final jsonList =
         cleanData
             .map(
@@ -83,6 +85,10 @@ class SleepDataFetcher {
               },
             )
             .toList();
+
+    // 예쁘게 들여쓰기 해서 출력
+    const encoder = JsonEncoder.withIndent('  ');
+    debugPrint('🧭 Sleep JSON Data:\n${encoder.convert(jsonList)}');
 
     return cleanData.map((e) {
       return SleepEntry(start: e.dateFrom, end: e.dateTo, type: e.type);

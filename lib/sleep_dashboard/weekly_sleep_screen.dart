@@ -17,6 +17,16 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
   bool _isLoggedIn = true;
   String username = '사용자';
 
+  final Map<String, double> scores = {
+    'Mon': 70,
+    'Tue': 60,
+    'Wed': 85,
+    'Thu': 50,
+    'Fri': 90,
+    'Sat': 88,
+    'Sun': 89,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +58,11 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bestDay =
+        scores.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+    final worstDay =
+        scores.entries.reduce((a, b) => a.value < b.value ? a : b).key;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: TopNav(
@@ -75,7 +90,6 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
               ),
               const SizedBox(height: 20),
 
-              // 탭
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -88,46 +102,39 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
               ),
               const SizedBox(height: 20),
 
-              // 그래프
               SizedBox(
                 height: 150,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildBar('Mon', 70),
-                    _buildBar('Tue', 60),
-                    _buildBar('Wed', 85),
-                    _buildBar('Thu', 50),
-                    _buildBar('Fri', 90),
-                    _buildBar('Sat', 88),
-                    _buildBar('Sun', 89),
-                  ],
+                  children:
+                      scores.entries
+                          .map((e) => _buildBar(e.key, e.value))
+                          .toList(),
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Best / Worst
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: const [
+                children: [
                   Column(
                     children: [
-                      Text(
+                      const Text(
                         'Best 수면 요일',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      SizedBox(height: 4),
-                      Text('금요일'),
+                      const SizedBox(height: 4),
+                      Text(_translateDay(bestDay)),
                     ],
                   ),
                   Column(
                     children: [
-                      Text(
+                      const Text(
                         'Worst 수면 요일',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      SizedBox(height: 4),
-                      Text('화요일'),
+                      const SizedBox(height: 4),
+                      Text(_translateDay(worstDay)),
                     ],
                   ),
                 ],
@@ -139,7 +146,6 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
               ),
               const SizedBox(height: 12),
 
-              // 입력창 or 읽기 전용
               if (_isEditing)
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -169,8 +175,6 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
                   ),
                 ),
               const SizedBox(height: 20),
-
-              // 저장 / 수정 버튼
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -188,9 +192,7 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
                   ),
                   child: Text(
                     _isEditing ? '저장하기' : '수정하기',
-                    style: const TextStyle(
-                      color: Colors.white,
-                    ), // ✅ 글자색 흰색으로 지정
+                    style: const TextStyle(color: Colors.white),
                   ),
                 ),
               ),
@@ -237,10 +239,36 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
+        Text(
+          height.toInt().toString(),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 4),
         Container(width: 16, height: height, color: const Color(0xFFF6D35F)),
         const SizedBox(height: 4),
         Text(day),
       ],
     );
+  }
+
+  String _translateDay(String day) {
+    switch (day) {
+      case 'Mon':
+        return '월요일';
+      case 'Tue':
+        return '화요일';
+      case 'Wed':
+        return '수요일';
+      case 'Thu':
+        return '목요일';
+      case 'Fri':
+        return '금요일';
+      case 'Sat':
+        return '토요일';
+      case 'Sun':
+        return '일요일';
+      default:
+        return day;
+    }
   }
 }
