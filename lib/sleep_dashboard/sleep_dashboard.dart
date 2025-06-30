@@ -120,6 +120,12 @@ class _SleepDashboardState extends State<SleepDashboard> {
       if (remRatio < 25) penalty += 20;
 
       sleepScore = ((percentAchieved * 100).toInt() - penalty).clamp(0, 100);
+      final todayKey =
+          ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][now.weekday - 1];
+      await storage.write(
+        key: 'sleepScore_$todayKey',
+        value: sleepScore.toString(),
+      );
 
       formattedDuration =
           '${todaySleep!.inHours}시간 ${todaySleep!.inMinutes % 60}분';

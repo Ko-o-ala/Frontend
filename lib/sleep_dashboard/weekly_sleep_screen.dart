@@ -3,6 +3,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:health/health.dart';
 import 'package:my_app/TopNav.dart';
 import 'package:my_app/bottomNavigationBar.dart';
+import 'package:my_app/sleep_dashboard/monthly_sleep_screen.dart';
+import 'package:my_app/sleep_dashboard/sleep_dashboard.dart';
 
 class WeeklySleepScreen extends StatefulWidget {
   const WeeklySleepScreen({super.key});
@@ -14,16 +16,19 @@ class WeeklySleepScreen extends StatefulWidget {
 class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
   final storage = FlutterSecureStorage();
   final Health health = Health();
+
   bool _isLoggedIn = true;
   String username = '사용자';
   bool loading = true;
-  int weekOffset = 0; // 0: 이번주, -1: 지난주 등
+  int weekOffset = 0;
   Map<String, double> scores = {};
+  int todaySleepScore = 0;
 
   @override
   void initState() {
     super.initState();
     _loadUsername();
+    _loadTodayScore();
     _fetchWeeklySleep();
   }
 
@@ -32,6 +37,13 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
     setState(() {
       username = name ?? '사용자';
       _isLoggedIn = name != null;
+    });
+  }
+
+  Future<void> _loadTodayScore() async {
+    final score = await storage.read(key: 'todaySleepScore');
+    setState(() {
+      todaySleepScore = int.tryParse(score ?? '0') ?? 0;
     });
   }
 
@@ -47,38 +59,6 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
   Future<void> _fetchWeeklySleep() async {
     setState(() => loading = true);
 
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final startOfWeek = today.subtract(
-      Duration(days: today.weekday - 1 + weekOffset * 7),
-    );
-    final endOfWeek = startOfWeek.add(const Duration(days: 7));
-
-    final sleepTypes = [
-      HealthDataType.SLEEP_ASLEEP,
-      HealthDataType.SLEEP_DEEP,
-      HealthDataType.SLEEP_REM,
-      HealthDataType.SLEEP_LIGHT,
-    ];
-    final permissions = List.filled(sleepTypes.length, HealthDataAccess.READ);
-
-    final authorized = await health.requestAuthorization(
-      sleepTypes,
-      permissions: permissions,
-    );
-    if (!authorized) {
-      print('권한 거부됨');
-      setState(() => loading = false);
-      return;
-    }
-
-    final rawData = await health.getHealthDataFromTypes(
-      startTime: startOfWeek,
-      endTime: endOfWeek,
-      types: sleepTypes,
-    );
-
-    final cleanData = health.removeDuplicates(rawData);
     final Map<String, double> tempScores = {
       'Mon': 0,
       'Tue': 0,
@@ -89,17 +69,13 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
       'Sun': 0,
     };
 
-    for (var entry in cleanData) {
-      final day = _dayToKey(entry.dateFrom.weekday);
-      final duration =
-          entry.dateTo.difference(entry.dateFrom).inMinutes.toDouble();
-      tempScores[day] = (tempScores[day] ?? 0) + duration;
+    for (final key in tempScores.keys) {
+      final value = await storage.read(key: 'sleepScore_$key');
+      tempScores[key] = double.tryParse(value ?? '0') ?? 0;
     }
 
     setState(() {
-      scores = tempScores.map(
-        (key, value) => MapEntry(key, value / 5),
-      ); // 점수화 (예시)
+      scores = tempScores;
       loading = false;
     });
   }
@@ -127,6 +103,38 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
       default:
         return key;
     }
+  }
+
+  Widget _buildTab(BuildContext context, String label, bool selected) {
+    return GestureDetector(
+      onTap: () {
+        if (label == 'Days') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => SleepDashboard()),
+          );
+        } else if (label == 'Months') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => MonthlySleepScreen()),
+          );
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF8183D9) : Colors.grey[200],
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -170,6 +178,16 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
                         ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildTab(context, 'Days', false),
+                          _buildTab(context, 'Weeks', true),
+                          _buildTab(context, 'Months', false),
+                        ],
                       ),
                       const SizedBox(height: 20),
 
@@ -247,6 +265,15 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
                             ),
                           ],
                         ),
+                      const SizedBox(height: 24),
+
+                      Text(
+                        '오늘 수면 점수: $todaySleepScore점',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
                     ],
                   ),
                 ),
