@@ -58,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await storage.write(key: 'username', value: username);
 
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/sleep');
+      Navigator.pushReplacementNamed(context, '/real-home');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('로그인 실패. 아이디 또는 비밀번호를 확인하세요.')),

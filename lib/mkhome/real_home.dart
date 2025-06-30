@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:my_app/TopNav.dart'; // ← TopNav 추가
-import 'package:my_app/bottomNavigationBar.dart'; // ← CustomBottomNavBar 추가
+
+import 'package:my_app/TopNav.dart';
+import 'package:my_app/bottomNavigationBar.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+final storage = FlutterSecureStorage();
 
 class RealHomeScreen extends StatefulWidget {
   const RealHomeScreen({super.key});
@@ -16,10 +19,9 @@ class _RealHomeScreenState extends State<RealHomeScreen>
     with SingleTickerProviderStateMixin {
   late stt.SpeechToText _speech;
   bool _isListening = false;
-  String _text = '🎤 여기에 인식된 텍스트가 표시됩니다';
+  String _text = '';
   String _username = '';
-  bool _isLoggedIn = false; // ← 로그인 상태
-  int _currentIndex = 0;
+  bool _isLoggedIn = false;
 
   late AnimationController _animationController;
   late Animation<double> _animation;
@@ -30,7 +32,6 @@ class _RealHomeScreenState extends State<RealHomeScreen>
     _loadUsername();
 
     _speech = stt.SpeechToText();
-
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -50,20 +51,20 @@ class _RealHomeScreenState extends State<RealHomeScreen>
   }
 
   Future<void> _loadUsername() async {
-    final prefs = await SharedPreferences.getInstance();
-    final username = prefs.getString('username') ?? '';
+    final name = await storage.read(key: 'username') ?? '';
     setState(() {
-      _username = username;
-      _isLoggedIn = username.isNotEmpty;
+      _username = name;
+      _isLoggedIn = name.isNotEmpty;
+      _text = ''; // 초기화
     });
   }
 
   Future<void> _handleLogout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('username');
+    await storage.delete(key: 'username');
     setState(() {
       _username = '';
       _isLoggedIn = false;
+      _text = '';
     });
   }
 
@@ -126,45 +127,38 @@ class _RealHomeScreenState extends State<RealHomeScreen>
         child: Column(
           children: [
             if (_username.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 20),
-                child: Text(
-                  '${_username}님, 안녕하세요!',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'lib/assets/koala.png',
+                        width: 200,
+                        height: 200,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        _username.isNotEmpty
+                            ? '$_username님, 이야기를 들려주세요!'
+                            : '이야기를 들려주세요!',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        _text.isEmpty ? '🎤 여기에 인식된 텍스트가 표시됩니다' : _text,
+                        style: const TextStyle(fontSize: 16),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
               ),
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      'lib/assets/koala.png',
-                      width: 200,
-                      height: 200,
-                      fit: BoxFit.contain,
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      '당신의 이야기를 들려주세요!',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      _text,
-                      style: const TextStyle(fontSize: 16),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
             Padding(
               padding: const EdgeInsets.only(bottom: 40.0),
               child: Column(
@@ -193,7 +187,9 @@ class _RealHomeScreenState extends State<RealHomeScreen>
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
                               color:
-                                  _isListening ? Colors.red : Color(0xFF8183D9),
+                                  _isListening
+                                      ? Colors.red
+                                      : const Color(0xFF8183D9),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
