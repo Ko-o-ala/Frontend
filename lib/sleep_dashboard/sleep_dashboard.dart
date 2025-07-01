@@ -100,26 +100,52 @@ class _SleepDashboardState extends State<SleepDashboard> {
         (sum, e) => sum + e.duration,
       );
 
-      // 🧠 수면 구조 비율 계산
-      final totalMin = todaySleep!.inMinutes.toDouble();
+      // 🔍 디버깅 로그
+      print('수면 엔트리 개수: ${entries.length}');
+      print('총 수면 시간: ${todaySleep}');
+      for (var e in entries) {
+        print('엔트리: ${e.type} | ${e.duration.inMinutes}분');
+      }
+
+      // --- 점수 로직 ---
+      final goalMin = widget.goalSleepDuration?.inMinutes ?? 480;
+      final totalMin = todaySleep?.inMinutes.toDouble() ?? 0;
+
+      // 1) 수면 시간 점수 (40%)
+      final sleepDurationScore =
+          ((totalMin / goalMin) * 100).clamp(0, 100).toInt();
+
+      // 2) 수면 구조 점수 (50%)
       double deepMin = 0, remMin = 0;
       for (var e in entries) {
         final m = e.duration.inMinutes.toDouble();
         if (e.type == HealthDataType.SLEEP_DEEP) deepMin += m;
         if (e.type == HealthDataType.SLEEP_REM) remMin += m;
       }
-      final deepRatio = (totalMin > 0) ? (deepMin / totalMin) * 100 : 0;
-      final remRatio = (totalMin > 0) ? (remMin / totalMin) * 100 : 0;
+      final deepRatio = totalMin > 0 ? (deepMin / totalMin) * 100 : 0;
+      final remRatio = totalMin > 0 ? (remMin / totalMin) * 100 : 0;
 
-      // 🧮 점수 계산
-      final goalMin = widget.goalSleepDuration?.inMinutes ?? 480;
-      final percentAchieved = (totalMin / goalMin).clamp(0, 1);
+      int structureScore = 100;
+      if (deepRatio < 20) structureScore -= 20;
+      if (remRatio < 25) structureScore -= 20;
 
-      int penalty = 0;
-      if (deepRatio < 20) penalty += 20;
-      if (remRatio < 25) penalty += 20;
+      // 3) 깨어난 횟수 점수 (10%)
+      final awakenings =
+          entries.where((e) => e.type == HealthDataType.SLEEP_AWAKE).length;
+      final awakenScore =
+          awakenings == 0
+              ? 100
+              : awakenings == 1
+              ? 95
+              : 90;
 
-      sleepScore = ((percentAchieved * 100).toInt() - penalty).clamp(0, 100);
+      // 최종 점수 계산
+      sleepScore = ((sleepDurationScore * 0.4) +
+              (structureScore * 0.5) +
+              (awakenScore * 0.1))
+          .round()
+          .clamp(0, 100);
+
       final todayKey =
           ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][now.weekday - 1];
       await storage.write(
@@ -189,7 +215,6 @@ class _SleepDashboardState extends State<SleepDashboard> {
                       ),
                       const SizedBox(height: 20),
 
-                      // 오늘 수면 요약
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
@@ -238,7 +263,6 @@ class _SleepDashboardState extends State<SleepDashboard> {
                       ),
                       const SizedBox(height: 16),
 
-                      // 수면 점수 표시
                       Center(
                         child: CircularPercentIndicator(
                           radius: 80,
