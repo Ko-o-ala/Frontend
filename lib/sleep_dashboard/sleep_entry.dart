@@ -30,11 +30,10 @@ class SleepEntry {
   }
 }
 
-/// 수면 데이터를 Health API에서 가져오는 클래스
 class SleepDataFetcher {
   final Health _health = Health();
 
-  // 가져올 수면 관련 데이터 타입 목록
+  // 가져올 수면 관련 데이터 타입
   final List<HealthDataType> sleepTypes = [
     HealthDataType.SLEEP_ASLEEP,
     HealthDataType.SLEEP_DEEP,
@@ -43,7 +42,6 @@ class SleepDataFetcher {
     HealthDataType.SLEEP_AWAKE,
   ];
 
-  /// 주어진 날짜(date)에 해당하는 수면 데이터를 가져옵니다.
   Future<List<SleepEntry>> fetchSleepDataForDate(DateTime date) async {
     final permissions = sleepTypes.map((_) => HealthDataAccess.READ).toList();
 
@@ -56,13 +54,14 @@ class SleepDataFetcher {
       throw Exception('❌ 건강 데이터 접근 권한이 거부되었습니다.');
     }
 
-    // 🔸 7월 1일 기준이면 전날 18시부터 당일 정오까지
+    final now = DateTime.now();
+
     final startTime = DateTime(
-      date.year,
-      date.month,
-      date.day,
+      now.year,
+      now.month,
+      now.day,
     ).subtract(const Duration(hours: 6)); // 전날 18시
-    final endTime = DateTime(date.year, date.month, date.day, 12); // 당일 낮 12시
+    final endTime = DateTime(now.year, now.month, now.day, 12); // 오늘 12시
 
     final rawData = await _health.getHealthDataFromTypes(
       types: sleepTypes,
@@ -72,7 +71,7 @@ class SleepDataFetcher {
 
     final cleanData = _health.removeDuplicates(rawData);
 
-    // JSON 로그 출력 (디버깅용)
+    // JSON 형태로 변환
     final jsonList =
         cleanData
             .map(
@@ -87,10 +86,10 @@ class SleepDataFetcher {
             )
             .toList();
 
+    // 예쁘게 들여쓰기 해서 출력
     const encoder = JsonEncoder.withIndent('  ');
     debugPrint('🧭 Sleep JSON Data:\n${encoder.convert(jsonList)}');
 
-    // SleepEntry 형태로 변환
     return cleanData.map((e) {
       return SleepEntry(start: e.dateFrom, end: e.dateTo, type: e.type);
     }).toList();
