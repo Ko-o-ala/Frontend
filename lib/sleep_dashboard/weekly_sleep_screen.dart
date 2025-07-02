@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:health/health.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:my_app/TopNav.dart';
 import 'package:my_app/bottomNavigationBar.dart';
 import 'package:my_app/sleep_dashboard/monthly_sleep_screen.dart';
@@ -59,7 +61,7 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
   Future<void> _fetchWeeklySleep() async {
     setState(() => loading = true);
 
-    final Map<String, double> tempScores = {
+    final tempScores = <String, double>{
       'Mon': 0,
       'Tue': 0,
       'Wed': 0,
@@ -69,9 +71,28 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
       'Sun': 0,
     };
 
-    for (final key in tempScores.keys) {
-      final value = await storage.read(key: 'sleepScore_$key');
-      tempScores[key] = double.tryParse(value ?? '0') ?? 0;
+    final now = DateTime.now().subtract(Duration(days: 7 * weekOffset));
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+
+    final userId = await storage.read(key: 'userId');
+
+    for (int i = 0; i < 7; i++) {
+      final date = monday.add(Duration(days: i));
+      final formattedDate =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      final uri = Uri.parse(
+        'https://kooala.tassoo.uk/sleep-data/$userId/$formattedDate',
+      );
+
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final score = (data['sleep_score'] ?? 0).toDouble();
+        final key = _dayToKey(date.weekday);
+        tempScores[key] = score;
+      } else {
+        print('❗ 오류: $formattedDate 수면 데이터 불러오기 실패 (${response.statusCode})');
+      }
     }
 
     setState(() {
