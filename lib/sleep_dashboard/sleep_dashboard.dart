@@ -7,6 +7,8 @@ import 'package:my_app/TopNav.dart';
 import 'package:my_app/sleep_dashboard/monthly_sleep_screen.dart';
 import 'package:my_app/sleep_dashboard/weekly_sleep_screen.dart';
 import 'package:my_app/sleep_dashboard/sleep_entry.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 final storage = FlutterSecureStorage();
 
@@ -34,6 +36,56 @@ class _SleepDashboardState extends State<SleepDashboard> {
     super.initState();
     _loadUsername();
     _fetchTodaySleep();
+  }
+
+  Future<void> sendSleepDataToServer({
+    required String userId,
+    required DateTime date,
+    required DateTime start,
+    required DateTime end,
+    required Duration total,
+    required Duration deep,
+    required Duration rem,
+    required Duration light,
+    required Duration awake,
+    required int sleepScore,
+    List<Map<String, String>>? segments,
+  }) async {
+    final uri = Uri.parse('https://kooala.tassoo.uk/sleep-data');
+
+    final body = {
+      'userID': userId,
+      'date': date.toIso8601String().substring(0, 10),
+      'startTime':
+          '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}',
+      'endTime':
+          '${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}',
+      'segments': segments,
+      'totalSleepDuration': total.inMinutes,
+      'deepSleepDuration': deep.inMinutes,
+      'remSleepDuration': rem.inMinutes,
+      'lightSleepDuration': light.inMinutes,
+      'awakeDuration': awake.inMinutes,
+      'sleepScore': sleepScore,
+    };
+
+    final token = await storage.read(key: 'jwt');
+    print('Token: $token');
+    final response = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      print('✅ Sleep data sent successfully!');
+    } else {
+      print('❌ Failed to send sleep data: ${response.statusCode}');
+      print(response.body);
+    }
   }
 
   Future<void> _loadUsername() async {
@@ -100,22 +152,19 @@ class _SleepDashboardState extends State<SleepDashboard> {
         (sum, e) => sum + e.duration,
       );
 
-      // 🔍 디버깅 로그
+      // 디버그 로그
       print('수면 엔트리 개수: ${entries.length}');
       print('총 수면 시간: ${todaySleep}');
       for (var e in entries) {
         print('엔트리: ${e.type} | ${e.duration.inMinutes}분');
       }
 
-      // --- 점수 로직 ---
       final goalMin = widget.goalSleepDuration?.inMinutes ?? 480;
       final totalMin = todaySleep?.inMinutes.toDouble() ?? 0;
 
-      // 1) 수면 시간 점수 (40%)
       final sleepDurationScore =
           ((totalMin / goalMin) * 100).clamp(0, 100).toInt();
 
-      // 2) 수면 구조 점수 (50%)
       double deepMin = 0, remMin = 0;
       for (var e in entries) {
         final m = e.duration.inMinutes.toDouble();
@@ -129,7 +178,6 @@ class _SleepDashboardState extends State<SleepDashboard> {
       if (deepRatio < 20) structureScore -= 20;
       if (remRatio < 25) structureScore -= 20;
 
-      // 3) 깨어난 횟수 점수 (10%)
       final awakenings =
           entries.where((e) => e.type == HealthDataType.SLEEP_AWAKE).length;
       final awakenScore =
@@ -139,12 +187,15 @@ class _SleepDashboardState extends State<SleepDashboard> {
               ? 95
               : 90;
 
-      // 최종 점수 계산
-      sleepScore = ((sleepDurationScore * 0.4) +
-              (structureScore * 0.5) +
-              (awakenScore * 0.1))
-          .round()
-          .clamp(0, 100);
+      if (totalMin == 0) {
+        sleepScore = 0;
+      } else {
+        sleepScore = ((sleepDurationScore * 0.4) +
+                (structureScore * 0.5) +
+                (awakenScore * 0.1))
+            .round()
+            .clamp(0, 100);
+      }
 
       final todayKey =
           ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][now.weekday - 1];
@@ -155,6 +206,43 @@ class _SleepDashboardState extends State<SleepDashboard> {
 
       formattedDuration =
           '${todaySleep!.inHours}시간 ${todaySleep!.inMinutes % 60}분';
+      final storedUserId = await storage.read(key: 'userID');
+
+      await sendSleepDataToServer(
+        userId: storedUserId ?? 'unknown',
+        date: now,
+        start: entries.first.start,
+        end: entries.last.end,
+        total: todaySleep!,
+        deep: Duration(minutes: deepMin.toInt()),
+        rem: Duration(minutes: remMin.toInt()),
+        light: Duration(
+          minutes:
+              totalMin.toInt() -
+              deepMin.toInt() -
+              remMin.toInt() -
+              entries
+                  .where((e) => e.type == HealthDataType.SLEEP_AWAKE)
+                  .fold<int>(0, (s, e) => s + e.duration.inMinutes),
+        ),
+        awake: Duration(
+          minutes: entries
+              .where((e) => e.type == HealthDataType.SLEEP_AWAKE)
+              .fold<int>(0, (s, e) => s + e.duration.inMinutes),
+        ),
+        sleepScore: sleepScore,
+        segments:
+            entries
+                .map(
+                  (e) => {
+                    'start':
+                        '${e.start.hour.toString().padLeft(2, '0')}:${e.start.minute.toString().padLeft(2, '0')}',
+                    'end':
+                        '${e.end.hour.toString().padLeft(2, '0')}:${e.end.minute.toString().padLeft(2, '0')}',
+                  },
+                )
+                .toList(),
+      );
 
       setState(() => loading = false);
     } catch (e) {
@@ -204,7 +292,6 @@ class _SleepDashboardState extends State<SleepDashboard> {
                         ),
                       ),
                       const SizedBox(height: 20),
-
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -214,7 +301,6 @@ class _SleepDashboardState extends State<SleepDashboard> {
                         ],
                       ),
                       const SizedBox(height: 20),
-
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
@@ -241,7 +327,6 @@ class _SleepDashboardState extends State<SleepDashboard> {
                         ),
                       ),
                       const SizedBox(height: 20),
-
                       Row(
                         children: [
                           Expanded(
@@ -262,7 +347,6 @@ class _SleepDashboardState extends State<SleepDashboard> {
                         ],
                       ),
                       const SizedBox(height: 16),
-
                       Center(
                         child: CircularPercentIndicator(
                           radius: 80,
@@ -280,10 +364,8 @@ class _SleepDashboardState extends State<SleepDashboard> {
                           circularStrokeCap: CircularStrokeCap.round,
                         ),
                       ),
-
                       const SizedBox(height: 16),
                       const Divider(),
-
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -315,7 +397,6 @@ class _SleepDashboardState extends State<SleepDashboard> {
                           child: const Text('목표 수면시간 수정하기  +'),
                         ),
                       ),
-
                       const SizedBox(height: 24),
                       ListTile(
                         title: const Text('수면 사운드 추천받기'),
@@ -384,7 +465,6 @@ class _InfoItem extends StatelessWidget {
   final IconData icon;
   final String time;
   final String label;
-
   const _InfoItem({
     required this.icon,
     required this.time,

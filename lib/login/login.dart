@@ -48,13 +48,16 @@ class _LoginScreenState extends State<LoginScreen> {
         'password': passwordController.text.trim(),
       }),
     );
+    print('📦 로그인 응답: ${response.body}');
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       final decoded = json.decode(response.body);
       final token = decoded['data']['token'];
+      final responseUserId = decoded['data']['userID']; // ✅ 수정
       final username = decoded['data']['name'];
 
       await storage.write(key: 'jwt', value: token);
+      await storage.write(key: 'userID', value: responseUserId); // 로그인 후
       await storage.write(key: 'username', value: username);
 
       if (!mounted) return;

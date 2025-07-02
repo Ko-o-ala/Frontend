@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:my_app/TopNav.dart';
 import 'package:my_app/bottomNavigationBar.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class MonthlySleepScreen extends StatefulWidget {
   const MonthlySleepScreen({super.key});
@@ -13,18 +15,43 @@ class MonthlySleepScreen extends StatefulWidget {
 class _MonthlySleepScreenState extends State<MonthlySleepScreen> {
   final storage = FlutterSecureStorage();
   String username = '사용자';
-  bool _isLoggedIn = true;
+  bool _isLoggedIn = false;
 
-  final Map<DateTime, Map<String, dynamic>> sleepData = {
-    DateTime(2025, 5, 13): {'time': '6시간', 'score': 80},
-    DateTime(2025, 5, 15): {'time': '7시간', 'score': 92},
-    DateTime(2025, 5, 17): {'time': '5시간', 'score': 68},
-  };
+  Future<Map<DateTime, Map<String, dynamic>>> fetchSleepData() async {
+    final token = await storage.read(key: 'authToken');
+    final uri = Uri.parse(
+      'https://kooala.tassoo.uk/sleep-data/{userID}/{date}',
+    );
+    final resp = await http.get(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    if (resp.statusCode != 200)
+      throw Exception('Load failed: ${resp.statusCode}');
+    final data = jsonDecode(resp.body) as List;
+    final Map<DateTime, Map<String, dynamic>> map = {};
+    for (var item in data) {
+      final date = DateTime.parse(item['date']);
+      map[date] = {
+        'time': item['totalSleepDurationStr'],
+        'score': item['sleepScore'],
+      };
+    }
+    return map;
+  }
 
   @override
   void initState() {
     super.initState();
-    _loadUsername();
+    storage.read(key: 'username').then((v) {
+      setState(() {
+        username = v ?? '사용자';
+        _isLoggedIn = v != null;
+      });
+    });
   }
 
   Future<void> _loadUsername() async {
@@ -37,6 +64,7 @@ class _MonthlySleepScreenState extends State<MonthlySleepScreen> {
 
   Future<void> _handleLogout() async {
     await storage.delete(key: 'username');
+    await storage.delete(key: 'authToken');
     setState(() {
       username = '사용자';
       _isLoggedIn = false;
@@ -46,56 +74,64 @@ class _MonthlySleepScreenState extends State<MonthlySleepScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime(2025, 5);
-    final daysInMonth = DateUtils.getDaysInMonth(now.year, now.month);
-    final startWeekday = DateTime(now.year, now.month, 1).weekday;
-
+    final now = DateTime.now();
     return Scaffold(
       appBar: TopNav(
         isLoggedIn: _isLoggedIn,
         onLogin: () => Navigator.pushNamed(context, '/login'),
         onLogout: _handleLogout,
       ),
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-          child: ListView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
             children: [
-              Text(
-                username,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  username,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'Good Morning',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Good Morning',
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                ),
               ),
               const SizedBox(height: 20),
-
-              // 탭
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildTab(context, 'Days', false),
+                  _buildTab('Days', false),
                   const SizedBox(width: 8),
-                  _buildTab(context, 'Weeks', false),
+                  _buildTab('Weeks', false),
                   const SizedBox(width: 8),
-                  _buildTab(context, 'Months', true),
+                  _buildTab('Months', true),
                 ],
               ),
               const SizedBox(height: 16),
-
-              // 달력
-              _buildCalendar(now, daysInMonth, startWeekday),
-              const SizedBox(height: 20),
-
-              // 설명 텍스트
+              FutureBuilder<Map<DateTime, Map<String, dynamic>>>(
+                future: fetchSleepData(),
+                builder: (context, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const Expanded(
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  } else if (snap.hasError) {
+                    return Expanded(
+                      child: Center(child: Text('로딩 실패: ${snap.error}')),
+                    );
+                  }
+                  final sleepData = snap.data!;
+                  return Expanded(child: _buildCalendar(now, sleepData));
+                },
+              ),
+              const SizedBox(height: 16),
               Text(
-                '$username님은 6월에 ...',
+                '$username님은 ${now.month}월에 ...',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -108,16 +144,16 @@ class _MonthlySleepScreenState extends State<MonthlySleepScreen> {
       ),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: 2,
-        onTap: (index) {
-          if (index == 0) Navigator.pushReplacementNamed(context, '/real-home');
-          if (index == 1) Navigator.pushReplacementNamed(context, '/sleep');
-          if (index == 3) Navigator.pushReplacementNamed(context, '/setting');
+        onTap: (i) {
+          if (i == 0) Navigator.pushReplacementNamed(context, '/real-home');
+          if (i == 1) Navigator.pushReplacementNamed(context, '/sleep');
+          if (i == 3) Navigator.pushReplacementNamed(context, '/setting');
         },
       ),
     );
   }
 
-  Widget _buildTab(BuildContext context, String label, bool selected) {
+  Widget _buildTab(String label, bool selected) {
     return GestureDetector(
       onTap: () {
         if (label == 'Days') Navigator.pushReplacementNamed(context, '/sleep');
@@ -141,20 +177,51 @@ class _MonthlySleepScreenState extends State<MonthlySleepScreen> {
     );
   }
 
-  Widget _buildCalendar(DateTime month, int days, int startWeekday) {
+  Widget _buildCalendar(
+    DateTime now,
+    Map<DateTime, Map<String, dynamic>> sleepData,
+  ) {
+    final currentMonth = DateTime(now.year, now.month);
+    final daysInMonth = DateUtils.getDaysInMonth(
+      currentMonth.year,
+      currentMonth.month,
+    );
+    final startWeekday =
+        DateTime(currentMonth.year, currentMonth.month, 1).weekday;
     List<Widget> rows = [];
-    int day = 1 - (startWeekday - 1);
 
-    while (day <= days) {
-      List<Widget> week = [];
+    const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    rows.add(
+      Row(
+        children:
+            weekdays
+                .map(
+                  (d) => Expanded(
+                    child: Center(
+                      child: Text(
+                        d,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+      ),
+    );
 
+    int day = 1 - (startWeekday % 7);
+    while (day <= daysInMonth) {
+      List<Widget> weekRows = [];
       for (int i = 0; i < 7; i++) {
-        if (day < 1 || day > days) {
-          week.add(const Expanded(child: SizedBox()));
+        if (day < 1 || day > daysInMonth) {
+          weekRows.add(const Expanded(child: SizedBox()));
         } else {
-          DateTime currentDate = DateTime(month.year, month.month, day);
-          var data = sleepData[currentDate];
-          week.add(
+          final date = DateTime(currentMonth.year, currentMonth.month, day);
+          final data = sleepData[date];
+          weekRows.add(
             Expanded(
               child: Container(
                 margin: const EdgeInsets.all(4),
@@ -197,8 +264,7 @@ class _MonthlySleepScreenState extends State<MonthlySleepScreen> {
         }
         day++;
       }
-
-      rows.add(Row(children: week));
+      rows.add(Row(children: weekRows));
     }
 
     return Column(children: rows);
