@@ -116,17 +116,16 @@ class _SleepDashboardState extends State<SleepDashboard> {
     final permissions = List.filled(types.length, HealthDataAccess.READ);
 
     final now = DateTime.now();
-    final start = DateTime(
-      now.year,
-      now.month,
-      now.day,
-    ).subtract(const Duration(hours: 6));
-    final end = DateTime(now.year, now.month, now.day, 12);
+    final start = DateTime(now.year, now.month, now.day - 1, 18); // 어제 6PM
+    final end = DateTime(now.year, now.month, now.day, 12); // 오늘 정오
 
     final authorized = await health.requestAuthorization(
       types,
       permissions: permissions,
     );
+    print('✅ 권한 요청 결과: $authorized');
+    final hasPermissions = await health.hasPermissions(types);
+    print('🔍 실제 접근 권한 보유 여부: $hasPermissions');
     if (!authorized) {
       setState(() => loading = false);
       return;
