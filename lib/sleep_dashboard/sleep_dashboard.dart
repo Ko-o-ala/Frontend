@@ -115,10 +115,12 @@ class _SleepDashboardState extends State<SleepDashboard> {
         wakeEpisodes = 0,
         longDeepSegments = 0,
         transitions = 0;
+
     HealthDataPoint? prev;
 
     for (var d in data) {
       final minutes = d.dateTo.difference(d.dateFrom).inMinutes;
+
       switch (d.type) {
         case HealthDataType.SLEEP_DEEP:
           deepMin += minutes;
@@ -138,6 +140,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
         default:
           break;
       }
+
       if (prev != null && prev.type != d.type) transitions++;
       prev = d;
     }
@@ -146,18 +149,23 @@ class _SleepDashboardState extends State<SleepDashboard> {
     final totalMinutes = sleepEnd.difference(sleepStart).inMinutes;
     final goalMinutes = goalSleepDuration.inMinutes;
 
-    final timeScore = ((totalMinutes >= goalMinutes)
-            ? 40
-            : (40 - ((goalMinutes - totalMinutes) ~/ 60) * 20))
-        .clamp(0, 40);
+    int score = 100;
 
+    // 1. 수면 시간 감점
+    if (totalMinutes < goalMinutes) {
+      final hourDiff = ((goalMinutes - totalMinutes) / 60).ceil();
+      score -= (hourDiff * 20).clamp(0, 40);
+    }
+
+    // 2. 수면 구조 감점 (깊/REM/얕은 수면 비율 기준)
     final deepPct = totalSleepMin > 0 ? deepMin / totalSleepMin : 0;
     final remPct = totalSleepMin > 0 ? remMin / totalSleepMin : 0;
     final lightPct = totalSleepMin > 0 ? lightMin / totalSleepMin : 0;
     final diffSum =
         (deepPct - 0.2).abs() + (remPct - 0.2).abs() + (lightPct - 0.6).abs();
-    final structureScore = (30 - (diffSum / 0.1).round() * 10).clamp(0, 30);
+    score -= ((diffSum / 0.1).round() * 10).clamp(0, 30);
 
+    // 3. 심층 수면 분포 감점 (전반부 집중도)
     final sleepDuration = sleepEnd.difference(sleepStart);
     final earlyEnd = sleepStart.add(sleepDuration * 0.4);
     final earlyDeepMin = data
@@ -170,25 +178,27 @@ class _SleepDashboardState extends State<SleepDashboard> {
           0,
           (sum, d) => sum + d.dateTo.difference(d.dateFrom).inMinutes,
         );
-    final deepScore =
-        deepMin == 0 ? 0 : ((earlyDeepMin / deepMin) >= 0.8 ? 8 : 0);
+    final earlyDeepRatio = deepMin > 0 ? earlyDeepMin / deepMin : 0;
+    if (earlyDeepRatio < 0.8) score -= 8;
 
-    final awakeScore = (10 - wakeEpisodes * 5).clamp(0, 10);
+    // 4. 깸 횟수 감점
+    score -= (wakeEpisodes * 5).clamp(0, 10);
 
+    // 5. 수면 통합성 감점
     final hours = totalSleepMin / 60;
     final transitionRate = hours > 0 ? transitions / hours : 0;
-    final transitionScore = transitionRate < 5 ? 5 : 0;
-    final longDeepScore = (longDeepSegments * 5).clamp(0, 20);
-    final integrationScore = (transitionScore + longDeepScore).clamp(0, 10);
+    if (transitionRate >= 5) score -= 5;
+    if (longDeepSegments == 0) score -= 10;
 
-    final totalScore =
-        timeScore + structureScore + deepScore + awakeScore + integrationScore;
+    final finalScore = score.clamp(0, 100);
 
     print(
-      '🧠 수면 세부: 시간:$timeScore 구조:$structureScore 분포:$deepScore 깸:$awakeScore 통합:$integrationScore → 총:$totalScore',
+      '🧠 수면 세부 점수 - 감점 기준: 총:${finalScore}점 '
+      '(시간:${totalMinutes}분, 구조편차:${diffSum.toStringAsFixed(2)}, '
+      '깸:${wakeEpisodes}회, 전환:${transitions}회, 긴 깊은수면:${longDeepSegments})',
     );
 
-    return totalScore;
+    return finalScore;
   }
 
   Future<void> _fetchTodaySleep() async {
@@ -348,6 +358,14 @@ class _SleepDashboardState extends State<SleepDashboard> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () async {
+                  if (sleepScore == 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("수면점수 계산 중입니다. 잠시 후 다시 시도해주세요."),
+                      ),
+                    );
+                    return;
+                  }
                   final token = await storage.read(key: 'jwt');
                   final userId = await storage.read(key: 'userID');
                   if (token == null ||
@@ -358,6 +376,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
                     print('❌ 유저/토큰/수면데이터 부족');
                     return;
                   }
+                  print('📤 sleepScore 전송 전 확인: $sleepScore');
                   await sendSleepData(
                     userId: userId,
                     token: token,
