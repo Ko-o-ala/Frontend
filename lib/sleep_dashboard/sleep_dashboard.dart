@@ -79,7 +79,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
       "segments": [
         {"start": fm(sleepStart), "end": fm(sleepEnd)},
       ],
-      "totalSleepDuration": sleepEnd.difference(sleepStart).inMinutes,
+      "totalSleepDuration": todaySleep?.inMinutes ?? 0,
       "deepSleepDuration": deepSleep,
       "remSleepDuration": remSleep,
       "lightSleepDuration": lightSleep,
