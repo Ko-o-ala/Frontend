@@ -8,12 +8,12 @@ import 'package:my_app/sleep_dashboard/monthly_sleep_screen.dart';
 import 'package:my_app/sleep_dashboard/weekly_sleep_screen.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
 final storage = FlutterSecureStorage();
 
 class SleepDashboard extends StatefulWidget {
   final Duration? goalSleepDuration;
-
   const SleepDashboard({Key? key, this.goalSleepDuration}) : super(key: key);
 
   @override
@@ -25,6 +25,9 @@ class _SleepDashboardState extends State<SleepDashboard> {
   String username = '사용자';
   bool _isLoggedIn = false;
   Duration? todaySleep;
+  DateTime? sleepStart;
+  DateTime? sleepEnd;
+  int deepMin = 0, remMin = 0, lightMin = 0, awakeMin = 0;
 
   @override
   void initState() {
@@ -61,25 +64,16 @@ class _SleepDashboardState extends State<SleepDashboard> {
     required int sleepScore,
   }) async {
     final url = Uri.parse('https://kooala.tassoo.uk/sleep-data');
-
-    final String date = sleepStart.toIso8601String().substring(0, 10);
-    String formatTime(DateTime time) =>
-        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    final date = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    String fm(DateTime t) => t.toIso8601String().substring(11, 16);
 
     final body = {
       "userID": userId,
       "date": date,
-      "startTime": formatTime(sleepStart),
-      "endTime": formatTime(sleepEnd),
+      "startTime": fm(sleepStart),
+      "endTime": fm(sleepEnd),
       "segments": [
-        {
-          "start": formatTime(sleepStart),
-          "end": formatTime(sleepStart.add(const Duration(hours: 3))),
-        },
-        {
-          "start": formatTime(sleepStart.add(const Duration(hours: 4))),
-          "end": formatTime(sleepEnd),
-        },
+        {"start": fm(sleepStart), "end": fm(sleepEnd)},
       ],
       "totalSleepDuration": sleepEnd.difference(sleepStart).inMinutes,
       "deepSleepDuration": deepSleep,
@@ -89,7 +83,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
       "sleepScore": sleepScore,
     };
 
-    final response = await http.post(
+    final resp = await http.post(
       url,
       headers: {
         'Content-Type': 'application/json',
@@ -97,12 +91,10 @@ class _SleepDashboardState extends State<SleepDashboard> {
       },
       body: jsonEncode(body),
     );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
+    if (resp.statusCode == 200 || resp.statusCode == 201) {
       print('✅ 수면 데이터 전송 성공');
     } else {
-      print('❌ 전송 실패: ${response.statusCode}');
-      print(response.body);
+      print('❌ 전송 실패: ${resp.statusCode} / ${resp.body}');
     }
   }
 
@@ -115,64 +107,60 @@ class _SleepDashboardState extends State<SleepDashboard> {
       HealthDataType.SLEEP_AWAKE,
       HealthDataType.SLEEP_LIGHT,
     ];
-    final permissions = List.filled(types.length, HealthDataAccess.READ);
 
     final now = DateTime.now();
-    final yesterday = now.subtract(const Duration(days: 1));
-    final twoDaysAgo = now.subtract(const Duration(days: 2));
+    sleepStart = DateTime(now.year, now.month, now.day - 1, 18);
+    sleepEnd = DateTime(now.year, now.month, now.day, 12);
 
-    final ranges = [
-      {
-        'start': DateTime(
-          twoDaysAgo.year,
-          twoDaysAgo.month,
-          twoDaysAgo.day,
-          18,
-        ),
-        'end': DateTime(yesterday.year, yesterday.month, yesterday.day, 12),
-      },
-      {
-        'start': DateTime(yesterday.year, yesterday.month, yesterday.day, 18),
-        'end': DateTime(now.year, now.month, now.day, 12),
-      },
-    ];
-
-    final authorized = await health.requestAuthorization(
-      types,
-      permissions: permissions,
-    );
-    print('✅ 권한 요청 결과: $authorized');
+    final authorized = await health.requestAuthorization(types);
     if (!authorized) {
       setState(() => formattedDuration = '❌ 건강 앱 접근 거부됨');
       return;
     }
 
-    Duration totalDuration = Duration.zero;
+    try {
+      final data = await health.getHealthDataFromTypes(
+        types: types,
+        startTime: sleepStart!,
+        endTime: sleepEnd!,
+      );
 
-    for (var range in ranges) {
-      print('📅 요청 범위: ${range['start']} ~ ${range['end']}');
-      try {
-        final data = await health.getHealthDataFromTypes(
-          types: types,
-          startTime: range['start'] as DateTime,
-          endTime: range['end'] as DateTime,
-        );
-
-        print('👉 가져온 데이터 개수: ${data.length}');
-        for (var d in data) {
-          print('• ${d.type} | ${d.dateFrom} ~ ${d.dateTo} | ${d.value}');
-          totalDuration += d.dateTo.difference(d.dateFrom);
+      deepMin = remMin = lightMin = awakeMin = 0;
+      Duration total = Duration.zero;
+      for (var d in data) {
+        final dur = d.dateTo.difference(d.dateFrom);
+        total += dur;
+        switch (d.type) {
+          case HealthDataType.SLEEP_DEEP:
+            deepMin += dur.inMinutes;
+            break;
+          case HealthDataType.SLEEP_REM:
+            remMin += dur.inMinutes;
+            break;
+          case HealthDataType.SLEEP_LIGHT:
+          case HealthDataType.SLEEP_ASLEEP:
+            lightMin += dur.inMinutes;
+            break;
+          case HealthDataType.SLEEP_AWAKE:
+            awakeMin += dur.inMinutes;
+            break;
+          default:
+            break;
         }
-      } catch (e) {
-        print('⚠️ 오류 발생: $e');
       }
-    }
 
-    setState(() {
-      todaySleep = totalDuration;
-      formattedDuration =
-          '${totalDuration.inHours}시간 ${totalDuration.inMinutes % 60}분';
-    });
+      setState(() {
+        todaySleep = total;
+        formattedDuration = '${total.inHours}시간 ${total.inMinutes % 60}분';
+      });
+
+      print(
+        '🔁 요약 - total:${total.inMinutes}m, deep:$deepMin, rem:$remMin, light:$lightMin, awake:$awakeMin',
+      );
+    } catch (e) {
+      setState(() => formattedDuration = '⚠️ 오류 발생');
+      print('⚠️ 오류: $e');
+    }
   }
 
   @override
@@ -191,7 +179,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -224,8 +212,6 @@ class _SleepDashboardState extends State<SleepDashboard> {
                   borderRadius: BorderRadius.circular(16),
                   gradient: const LinearGradient(
                     colors: [Color(0xFF2C2C72), Color(0xFF1F1F4C)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
                   ),
                 ),
                 child: Text.rich(
@@ -267,34 +253,37 @@ class _SleepDashboardState extends State<SleepDashboard> {
                 onPressed: () async {
                   final token = await storage.read(key: 'authToken');
                   final userId = await storage.read(key: 'userID');
-
-                  if (userId == null || token == null || todaySleep == null) {
-                    print('❌ 유저 정보 또는 수면 데이터가 없음');
+                  if (token == null ||
+                      userId == null ||
+                      todaySleep == null ||
+                      sleepStart == null ||
+                      sleepEnd == null) {
+                    print('❌ 유저/토큰/수면데이터 부족');
                     return;
                   }
-
                   await sendSleepData(
                     userId: userId,
                     token: token,
-                    sleepStart: DateTime(2025, 7, 2, 22, 45),
-                    sleepEnd: DateTime(2025, 7, 3, 7, 15),
-                    deepSleep: 120,
-                    remSleep: 90,
-                    lightSleep: 220,
-                    awakeDuration: 30,
-                    sleepScore: 82,
+                    sleepStart: sleepStart!,
+                    sleepEnd: sleepEnd!,
+                    deepSleep: deepMin,
+                    remSleep: remMin,
+                    lightSleep: lightMin,
+                    awakeDuration: awakeMin,
+                    sleepScore: 0,
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2C2C72),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: const Text('🛏️ 수면 데이터 전송하기'),
+                child: const Text('🛏️ 오늘 수면 데이터 전송하기'),
               ),
+
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -326,7 +315,9 @@ class _SleepDashboardState extends State<SleepDashboard> {
               ListTile(
                 title: const Text('수면 사운드 추천받기'),
                 trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () => Navigator.pushNamed(context, '/sound'),
+                onTap: () {
+                  Navigator.pushNamed(context, '/sound');
+                },
               ),
               const ListTile(
                 title: Text('수면 조언 받으러 가기'),
@@ -352,25 +343,15 @@ class _SleepDashboardState extends State<SleepDashboard> {
   }
 
   Widget _buildTab(BuildContext context, String label, bool selected) {
+    Widget to = SleepDashboard();
+    if (label == 'Weeks') to = WeeklySleepScreen();
+    if (label == 'Months') to = MonthlySleepScreen();
     return GestureDetector(
-      onTap: () {
-        if (label == 'Weeks') {
-          Navigator.pushReplacement(
+      onTap:
+          () => Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => WeeklySleepScreen()),
-          );
-        } else if (label == 'Months') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => MonthlySleepScreen()),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => SleepDashboard()),
-          );
-        }
-      },
+            MaterialPageRoute(builder: (_) => to),
+          ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
@@ -393,7 +374,6 @@ class _InfoItem extends StatelessWidget {
   final IconData icon;
   final String time;
   final String label;
-
   const _InfoItem({
     required this.icon,
     required this.time,
@@ -401,32 +381,27 @@ class _InfoItem extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 32, color: Colors.blueAccent),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                time,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                label,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
+  Widget build(BuildContext context) => Row(
+    children: [
+      Icon(icon, size: 32, color: Colors.blueAccent),
+      const SizedBox(width: 8),
+      Flexible(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              time,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
 }
