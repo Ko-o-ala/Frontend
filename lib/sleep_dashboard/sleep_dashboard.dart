@@ -251,7 +251,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () async {
-                  final token = await storage.read(key: 'authToken');
+                  final token = await storage.read(key: 'jwt');
                   final userId = await storage.read(key: 'userID');
                   if (token == null ||
                       userId == null ||
