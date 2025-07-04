@@ -28,6 +28,8 @@ class _SleepDashboardState extends State<SleepDashboard> {
   DateTime? sleepStart;
   DateTime? sleepEnd;
   int deepMin = 0, remMin = 0, lightMin = 0, awakeMin = 0;
+  List<HealthDataPoint> healthData = [];
+  int sleepScore = 0;
 
   @override
   void initState() {
@@ -46,6 +48,8 @@ class _SleepDashboardState extends State<SleepDashboard> {
 
   Future<void> _handleLogout() async {
     await storage.delete(key: 'username');
+    await storage.delete(key: 'jwt');
+    await storage.delete(key: 'userID');
     setState(() {
       username = '사용자';
       _isLoggedIn = false;
@@ -98,6 +102,95 @@ class _SleepDashboardState extends State<SleepDashboard> {
     }
   }
 
+  int calculateSleepScore({
+    required List<HealthDataPoint> data,
+    required DateTime sleepStart,
+    required DateTime sleepEnd,
+    required Duration goalSleepDuration,
+  }) {
+    int deepMin = 0,
+        remMin = 0,
+        lightMin = 0,
+        awakeMin = 0,
+        wakeEpisodes = 0,
+        longDeepSegments = 0,
+        transitions = 0;
+    HealthDataPoint? prev;
+
+    for (var d in data) {
+      final minutes = d.dateTo.difference(d.dateFrom).inMinutes;
+      switch (d.type) {
+        case HealthDataType.SLEEP_DEEP:
+          deepMin += minutes;
+          if (minutes >= 30) longDeepSegments++;
+          break;
+        case HealthDataType.SLEEP_REM:
+          remMin += minutes;
+          break;
+        case HealthDataType.SLEEP_LIGHT:
+        case HealthDataType.SLEEP_ASLEEP:
+          lightMin += minutes;
+          break;
+        case HealthDataType.SLEEP_AWAKE:
+          awakeMin += minutes;
+          wakeEpisodes++;
+          break;
+        default:
+          break;
+      }
+      if (prev != null && prev.type != d.type) transitions++;
+      prev = d;
+    }
+
+    final totalSleepMin = deepMin + remMin + lightMin;
+    final totalMinutes = sleepEnd.difference(sleepStart).inMinutes;
+    final goalMinutes = goalSleepDuration.inMinutes;
+
+    final timeScore = ((totalMinutes >= goalMinutes)
+            ? 40
+            : (40 - ((goalMinutes - totalMinutes) ~/ 60) * 20))
+        .clamp(0, 40);
+
+    final deepPct = totalSleepMin > 0 ? deepMin / totalSleepMin : 0;
+    final remPct = totalSleepMin > 0 ? remMin / totalSleepMin : 0;
+    final lightPct = totalSleepMin > 0 ? lightMin / totalSleepMin : 0;
+    final diffSum =
+        (deepPct - 0.2).abs() + (remPct - 0.2).abs() + (lightPct - 0.6).abs();
+    final structureScore = (30 - (diffSum / 0.1).round() * 10).clamp(0, 30);
+
+    final sleepDuration = sleepEnd.difference(sleepStart);
+    final earlyEnd = sleepStart.add(sleepDuration * 0.4);
+    final earlyDeepMin = data
+        .where(
+          (d) =>
+              d.type == HealthDataType.SLEEP_DEEP &&
+              d.dateFrom.isBefore(earlyEnd),
+        )
+        .fold<int>(
+          0,
+          (sum, d) => sum + d.dateTo.difference(d.dateFrom).inMinutes,
+        );
+    final deepScore =
+        deepMin == 0 ? 0 : ((earlyDeepMin / deepMin) >= 0.8 ? 8 : 0);
+
+    final awakeScore = (10 - wakeEpisodes * 5).clamp(0, 10);
+
+    final hours = totalSleepMin / 60;
+    final transitionRate = hours > 0 ? transitions / hours : 0;
+    final transitionScore = transitionRate < 5 ? 5 : 0;
+    final longDeepScore = (longDeepSegments * 5).clamp(0, 20);
+    final integrationScore = (transitionScore + longDeepScore).clamp(0, 10);
+
+    final totalScore =
+        timeScore + structureScore + deepScore + awakeScore + integrationScore;
+
+    print(
+      '🧠 수면 세부: 시간:$timeScore 구조:$structureScore 분포:$deepScore 깸:$awakeScore 통합:$integrationScore → 총:$totalScore',
+    );
+
+    return totalScore;
+  }
+
   Future<void> _fetchTodaySleep() async {
     final health = Health();
     final types = [
@@ -124,6 +217,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
         startTime: sleepStart!,
         endTime: sleepEnd!,
       );
+      healthData = data;
 
       deepMin = remMin = lightMin = awakeMin = 0;
       Duration total = Duration.zero;
@@ -149,14 +243,17 @@ class _SleepDashboardState extends State<SleepDashboard> {
         }
       }
 
-      setState(() {
-        todaySleep = total;
-        formattedDuration = '${total.inHours}시간 ${total.inMinutes % 60}분';
-      });
+      todaySleep = total;
+      formattedDuration = '${total.inHours}시간 ${total.inMinutes % 60}분';
 
-      print(
-        '🔁 요약 - total:${total.inMinutes}m, deep:$deepMin, rem:$remMin, light:$lightMin, awake:$awakeMin',
+      sleepScore = calculateSleepScore(
+        data: data,
+        sleepStart: sleepStart!,
+        sleepEnd: sleepEnd!,
+        goalSleepDuration: widget.goalSleepDuration ?? Duration(hours: 8),
       );
+
+      setState(() {});
     } catch (e) {
       setState(() => formattedDuration = '⚠️ 오류 발생');
       print('⚠️ 오류: $e');
@@ -270,7 +367,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
                     remSleep: remMin,
                     lightSleep: lightMin,
                     awakeDuration: awakeMin,
-                    sleepScore: 0,
+                    sleepScore: sleepScore,
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -283,7 +380,6 @@ class _SleepDashboardState extends State<SleepDashboard> {
                 ),
                 child: const Text('🛏️ 오늘 수면 데이터 전송하기'),
               ),
-
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -300,10 +396,13 @@ class _SleepDashboardState extends State<SleepDashboard> {
                 child: CircularPercentIndicator(
                   radius: 80.0,
                   lineWidth: 14.0,
-                  percent: 0.7,
-                  center: const Text(
-                    "70점",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  percent: sleepScore / 100.0,
+                  center: Text(
+                    "$sleepScore 점",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   progressColor: const Color(0xFFF6D35F),
                   backgroundColor: Colors.black,
@@ -319,9 +418,12 @@ class _SleepDashboardState extends State<SleepDashboard> {
                   Navigator.pushNamed(context, '/sound');
                 },
               ),
-              const ListTile(
-                title: Text('수면 조언 받으러 가기'),
-                trailing: Icon(Icons.arrow_forward_ios),
+              ListTile(
+                title: const Text('수면 조언 받으러 가기'),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () {
+                  Navigator.pushNamed(context, '/advice');
+                },
               ),
             ],
           ),
@@ -343,7 +445,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
   }
 
   Widget _buildTab(BuildContext context, String label, bool selected) {
-    Widget to = SleepDashboard();
+    Widget to = SleepDashboard(goalSleepDuration: widget.goalSleepDuration);
     if (label == 'Weeks') to = WeeklySleepScreen();
     if (label == 'Months') to = MonthlySleepScreen();
     return GestureDetector(
