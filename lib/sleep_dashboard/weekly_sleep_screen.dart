@@ -1,3 +1,4 @@
+// 전체 import 생략 없이 유지
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:health/health.dart';
@@ -43,10 +44,27 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
   }
 
   Future<void> _loadTodayScore() async {
-    final score = await storage.read(key: 'todaySleepScore');
-    setState(() {
-      todaySleepScore = int.tryParse(score ?? '0') ?? 0;
-    });
+    final userId = await storage.read(key: 'userID');
+    final now = DateTime.now();
+    final formattedDate =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+    final uri = Uri.parse(
+      'https://kooala.tassoo.uk/sleep-data/$userId/$formattedDate',
+    );
+    final response = await http.get(uri);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final records = data['data'];
+      if (records != null && records is List && records.isNotEmpty) {
+        final record = records[0];
+        final score = (record['sleepScore'] ?? 0).toDouble();
+        setState(() => todaySleepScore = score.toInt());
+      }
+    } else {
+      print('❗ 오늘 수면 점수 불러오기 실패');
+    }
   }
 
   Future<void> _handleLogout() async {
@@ -73,7 +91,6 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
 
     final now = DateTime.now().subtract(Duration(days: 7 * weekOffset));
     final monday = now.subtract(Duration(days: now.weekday - 1));
-
     final userId = await storage.read(key: 'userID');
 
     for (int i = 0; i < 7; i++) {
@@ -87,11 +104,17 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
       final response = await http.get(uri);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final score = (data['sleep_score'] ?? 0).toDouble();
-        final key = _dayToKey(date.weekday);
-        tempScores[key] = score;
-      } else {
-        print('❗ 오류: $formattedDate 수면 데이터 불러오기 실패 (${response.statusCode})');
+        final records = data['data'];
+        if (records != null && records is List && records.isNotEmpty) {
+          final record = records[0];
+          final score = (record['sleepScore'] ?? 0).toDouble();
+          final dateStr = record['date'];
+          if (dateStr != null && dateStr is String) {
+            final dateObj = DateTime.parse(dateStr).toLocal();
+            final key = _dayToKey(dateObj.weekday);
+            tempScores[key] = score;
+          }
+        }
       }
     }
 
@@ -201,7 +224,6 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -211,7 +233,6 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
                         ],
                       ),
                       const SizedBox(height: 20),
-
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -247,7 +268,6 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
                         ],
                       ),
                       const SizedBox(height: 20),
-
                       SizedBox(
                         height: 150,
                         child: Row(
@@ -259,7 +279,6 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-
                       if (scores.isNotEmpty)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -287,7 +306,6 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
                           ],
                         ),
                       const SizedBox(height: 24),
-
                       Text(
                         '오늘 수면 점수: $todaySleepScore점',
                         style: const TextStyle(
