@@ -79,21 +79,11 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
   Future<void> _fetchWeeklySleep() async {
     setState(() => loading = true);
 
-    final tempScores = <String, double>{
-      'Mon': 0,
-      'Tue': 0,
-      'Wed': 0,
-      'Thu': 0,
-      'Fri': 0,
-      'Sat': 0,
-      'Sun': 0,
-    };
-
     final now = DateTime.now().subtract(Duration(days: 7 * weekOffset));
     final monday = now.subtract(Duration(days: now.weekday - 1));
     final userId = await storage.read(key: 'userID');
 
-    for (int i = 0; i < 7; i++) {
+    final futures = List.generate(7, (i) async {
       final date = monday.add(Duration(days: i));
       final formattedDate =
           '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
@@ -112,10 +102,26 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
           if (dateStr != null && dateStr is String) {
             final dateObj = DateTime.parse(dateStr).toLocal();
             final key = _dayToKey(dateObj.weekday);
-            tempScores[key] = score;
+            return MapEntry(key, score);
           }
         }
       }
+      return null;
+    });
+
+    final results = await Future.wait(futures);
+    final tempScores = {
+      'Mon': 0.0,
+      'Tue': 0.0,
+      'Wed': 0.0,
+      'Thu': 0.0,
+      'Fri': 0.0,
+      'Sat': 0.0,
+      'Sun': 0.0,
+    };
+
+    for (var result in results) {
+      if (result != null) tempScores[result.key] = result.value;
     }
 
     setState(() {
