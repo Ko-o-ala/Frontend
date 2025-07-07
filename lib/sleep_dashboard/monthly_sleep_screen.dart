@@ -39,13 +39,10 @@ class _MonthlySleepScreenState extends State<MonthlySleepScreen> {
     final month = now.month;
     final daysInMonth = DateUtils.getDaysInMonth(year, month);
 
-    final Map<DateTime, Map<String, dynamic>> map = {};
-
-    for (int day = 1; day <= daysInMonth; day++) {
-      final date = DateTime(year, month, day);
+    final futures = List.generate(daysInMonth, (i) async {
+      final date = DateTime(year, month, i + 1);
       final formattedDate =
           '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-
       final uri = Uri.parse(
         'https://kooala.tassoo.uk/sleep-data/$userId/$formattedDate',
       );
@@ -56,15 +53,19 @@ class _MonthlySleepScreenState extends State<MonthlySleepScreen> {
         final records = data['data'];
         if (records != null && records is List && records.isNotEmpty) {
           final record = records[0];
-          map[date] = {
+          return MapEntry(date, {
             'duration': record['totalSleepDuration'],
             'score': record['sleepScore'],
-          };
+          });
         }
       }
-    }
+      return null;
+    });
 
-    return map;
+    final results = await Future.wait(futures);
+    return Map.fromEntries(
+      results.whereType<MapEntry<DateTime, Map<String, dynamic>>>(),
+    );
   }
 
   Future<void> _handleLogout() async {
