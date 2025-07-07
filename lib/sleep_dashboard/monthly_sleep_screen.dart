@@ -35,30 +35,35 @@ class _MonthlySleepScreenState extends State<MonthlySleepScreen> {
   Future<Map<DateTime, Map<String, dynamic>>> fetchSleepData() async {
     final userId = await storage.read(key: 'userID');
     final now = DateTime.now();
-    final formattedDate =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    final uri = Uri.parse(
-      'https://kooala.tassoo.uk/sleep-data/$userId/$formattedDate',
-    );
-    final resp = await http.get(uri);
-
-    if (resp.statusCode != 200)
-      throw Exception('Load failed: ${resp.statusCode}');
-
-    final raw = jsonDecode(resp.body);
-    final records = raw['data'] as List;
+    final year = now.year;
+    final month = now.month;
+    final daysInMonth = DateUtils.getDaysInMonth(year, month);
 
     final Map<DateTime, Map<String, dynamic>> map = {};
-    for (var item in records) {
-      final date = DateTime.parse(item['date']);
-      if (date.month == now.month) {
-        // 현재 달 데이터만 필터링
-        map[date] = {
-          'duration': item['totalSleepDuration'],
-          'score': item['sleepScore'],
-        };
+
+    for (int day = 1; day <= daysInMonth; day++) {
+      final date = DateTime(year, month, day);
+      final formattedDate =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+      final uri = Uri.parse(
+        'https://kooala.tassoo.uk/sleep-data/$userId/$formattedDate',
+      );
+
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final records = data['data'];
+        if (records != null && records is List && records.isNotEmpty) {
+          final record = records[0];
+          map[date] = {
+            'duration': record['totalSleepDuration'],
+            'score': record['sleepScore'],
+          };
+        }
       }
     }
+
     return map;
   }
 
