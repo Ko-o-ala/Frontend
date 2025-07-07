@@ -68,7 +68,7 @@ class _SleepDashboardState extends State<SleepDashboard> {
     required int sleepScore,
   }) async {
     final url = Uri.parse('https://kooala.tassoo.uk/sleep-data');
-    final date = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final date = DateFormat('yyyy-MM-dd').format(sleepStart);
     String fm(DateTime t) => t.toIso8601String().substring(11, 16);
 
     final body = {

@@ -1,4 +1,3 @@
-// 전체 import 생략 없이 유지
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:health/health.dart';
@@ -45,9 +44,9 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
 
   Future<void> _loadTodayScore() async {
     final userId = await storage.read(key: 'userID');
-    final now = DateTime.now();
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
     final formattedDate =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+        '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
 
     final uri = Uri.parse(
       'https://kooala.tassoo.uk/sleep-data/$userId/$formattedDate',
@@ -98,12 +97,8 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
         if (records != null && records is List && records.isNotEmpty) {
           final record = records[0];
           final score = (record['sleepScore'] ?? 0).toDouble();
-          final dateStr = record['date'];
-          if (dateStr != null && dateStr is String) {
-            final dateObj = DateTime.parse(dateStr).toLocal();
-            final key = _dayToKey(dateObj.weekday);
-            return MapEntry(key, score);
-          }
+          final key = _dayToKey(date.weekday);
+          return MapEntry(key, score);
         }
       }
       return null;
@@ -198,6 +193,9 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
             ? scores.entries.reduce((a, b) => a.value < b.value ? a : b).key
             : '';
 
+    final today = DateTime.now().subtract(const Duration(days: 1));
+    final todayKey = _dayToKey(today.weekday);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: TopNav(
@@ -279,9 +277,14 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children:
-                              scores.entries
-                                  .map((e) => _buildBar(e.key, e.value))
-                                  .toList(),
+                              scores.entries.map((e) {
+                                final isToday = e.key == todayKey;
+                                return _buildBar(
+                                  e.key,
+                                  e.value,
+                                  highlight: isToday,
+                                );
+                              }).toList(),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -334,16 +337,23 @@ class _WeeklySleepScreenState extends State<WeeklySleepScreen> {
     );
   }
 
-  Widget _buildBar(String day, double height) {
+  Widget _buildBar(String day, double height, {bool highlight = false}) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         Text(
           height.toInt().toString(),
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: highlight ? Colors.blueAccent : Colors.black,
+          ),
         ),
         const SizedBox(height: 4),
-        Container(width: 16, height: height, color: const Color(0xFFF6D35F)),
+        Container(
+          width: 16,
+          height: height,
+          color: highlight ? const Color(0xFF8183D9) : const Color(0xFFF6D35F),
+        ),
         const SizedBox(height: 4),
         Text(day),
       ],
