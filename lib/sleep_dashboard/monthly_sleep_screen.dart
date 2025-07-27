@@ -146,10 +146,10 @@ class _MonthlySleepScreenState extends State<MonthlySleepScreen> {
         ),
       ),
       bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 2,
+        currentIndex: 1,
         onTap: (i) {
           if (i == 0) Navigator.pushReplacementNamed(context, '/real-home');
-          if (i == 1) Navigator.pushReplacementNamed(context, '/sleep');
+          if (i == 2) Navigator.pushReplacementNamed(context, '/sound');
           if (i == 3) Navigator.pushReplacementNamed(context, '/setting');
         },
       ),
