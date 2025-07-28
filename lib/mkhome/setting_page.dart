@@ -8,7 +8,6 @@ import 'package:my_app/device/light_control_page.dart';
 import 'package:my_app/device/alarm/alarm_dashboard_page.dart';
 import 'package:my_app/device/humidifier_control_page.dart';
 
-
 // 임시 사용자 정보 (나중에 서버 연동 시 수정)
 Future<UserModel> fetchUserInfo() async {
   await Future.delayed(const Duration(seconds: 1));
@@ -52,24 +51,33 @@ class SettingsScreen extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(user.name,
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text(
+                        user.name,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text(user.email,
-                          style: const TextStyle(color: Colors.grey)),
+                      Text(
+                        user.email,
+                        style: const TextStyle(color: Colors.grey),
+                      ),
                     ],
-                  )
+                  ),
                 ],
               ),
               const SizedBox(height: 24),
               _buildSettingsItem(
                 context,
                 '내 계정 정보',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ManageAccountPage()),
-                ),
+                onTap:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ManageAccountPage(),
+                      ),
+                    ),
               ),
 
               _buildSettingsItem(
@@ -82,7 +90,10 @@ class SettingsScreen extends StatelessWidget {
 
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text('기기 제어 설정', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(
+                  '기기 제어 설정',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
               _buildSettingsItem(
                 context,
@@ -90,7 +101,9 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const LightControlPage()),
+                    MaterialPageRoute(
+                      builder: (context) => const LightControlPage(),
+                    ),
                   );
                 },
               ),
@@ -100,7 +113,9 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const AlarmDashboardPage()),
+                    MaterialPageRoute(
+                      builder: (context) => const AlarmDashboardPage(),
+                    ),
                   );
                 },
               ),
@@ -110,7 +125,9 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const HumidifierControlPage()),
+                    MaterialPageRoute(
+                      builder: (context) => const HumidifierControlPage(),
+                    ),
                   );
                 },
               ),
@@ -121,59 +138,75 @@ class SettingsScreen extends StatelessWidget {
               const Divider(),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text('고객 지원',
-                    style: TextStyle(
-                        color: Colors.grey, fontWeight: FontWeight.bold)),
+                child: Text(
+                  '고객 지원',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
               _buildSettingsItem(
                 context,
                 '자주 묻는 질문',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const FAQPage()),
-                ),
+                onTap:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const FAQPage()),
+                    ),
               ),
               _buildSettingsItem(
                 context,
                 '이용 약관/개인정보 처리방침',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const Notice()),
-                ),
+                onTap:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const Notice()),
+                    ),
               ),
               _buildSettingsItem(
                 context,
                 '버그 신고/기능 요청',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const BugReportPage()),
-                ),
+                onTap:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BugReportPage(),
+                      ),
+                    ),
               ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () {
                   showDialog(
                     context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text("로그아웃"),
-                      content: const Text("앱에서 로그아웃하시겠어요?\n다시 사용하려면 로그인해야 해요."),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text("취소하기"),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
+                    builder:
+                        (context) => AlertDialog(
+                          title: const Text("로그아웃"),
+                          content: const Text(
+                            "앱에서 로그아웃하시겠어요?\n다시 사용하려면 로그인해야 해요.",
                           ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                            Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-                          },
-                          child: const Text("로그아웃"),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text("취소하기"),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                              ),
+                              onPressed: () {
+                                Navigator.pop(context);
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  '/',
+                                  (route) => false,
+                                );
+                              },
+                              child: const Text("로그아웃"),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
                   );
                 },
                 child: const Text('로그아웃', style: TextStyle(color: Colors.teal)),
@@ -182,7 +215,10 @@ class SettingsScreen extends StatelessWidget {
                 onPressed: () {
                   // 계정 삭제 기능 연결 예정
                 },
-                child: const Text('계정 탈퇴하기', style: TextStyle(color: Colors.black54)),
+                child: const Text(
+                  '계정 탈퇴하기',
+                  style: TextStyle(color: Colors.black54),
+                ),
               ),
             ],
           );
@@ -191,7 +227,11 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingsItem(BuildContext context, String title, {VoidCallback? onTap}) {
+  Widget _buildSettingsItem(
+    BuildContext context,
+    String title, {
+    VoidCallback? onTap,
+  }) {
     return ListTile(
       title: Text(title),
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),

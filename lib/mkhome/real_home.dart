@@ -173,7 +173,7 @@ class _RealHomeScreenState extends State<RealHomeScreen>
                       color: Colors.grey.shade200,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text('크리스마스까지 며칠 남았어?'),
+                    child: const Text('오늘 하루 어떻게 정리하는게 좋을까?'),
                   ),
                   GestureDetector(
                     onTap: _listen,

@@ -58,7 +58,7 @@ class _SignInScreenState extends State<SignInScreen> {
         await storage.write(key: 'username', value: username);
 
         if (!mounted) return;
-        Navigator.pushReplacementNamed(context, '/login');
+        Navigator.pushReplacementNamed(context, '/survey');
       } else {
         throw Exception('회원가입 실패: ${response.body}');
       }
@@ -86,9 +86,24 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
               SizedBox(height: 10),
               Center(
-                child: Text(
-                  '계정을 생성하세요',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                child: Column(
+                  children: [
+                    Text(
+                      '계정을 생성하세요',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '1분이면 끝나요! 편하게 시작해보세요 😊',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF8183D9), // 강조 컬러
+                      ),
+                    ),
+                  ],
                 ),
               ),
               SizedBox(height: 30),
