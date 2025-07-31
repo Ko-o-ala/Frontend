@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/mkhome/real_home.dart';
+import 'package:my_app/signin/onboarding_screen.dart';
 import 'package:my_app/sleep_dashboard/sleep_entry_screen.dart';
 import 'package:my_app/sleep_time/sleep_goal_screen.dart';
 import 'package:my_app/sound/sound.dart';
@@ -93,6 +94,9 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(builder: (_) => RealHomeScreen());
           case '/sound':
             return MaterialPageRoute(builder: (_) => SoundScreen());
+
+          case '/start':
+            return MaterialPageRoute(builder: (_) => OnboardingScreen());
 
           case '/sleep-entry':
             final entry = settings.arguments as SleepEntry;
